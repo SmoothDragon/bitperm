@@ -248,8 +248,8 @@ impl BitMatrix4 {
         for i in 0..4 {
             // let pivot = Self::leadz((x>>i) & (0x1111 << (i<<2))) >> 2;
             let pivot = ((x>>i) & (0x1111 << (i<<2))).tzcnt() >> 2;
-            let pivot_bit = ((x>>i) & (0x1111 << (i<<2))).blsi();
             x = Self::swap_row(x, i, pivot);
+            let pivot_bit = ((x>>i) & (0x1111 << (i<<2))).blsi();
             x ^= ((x>>(i<<2)) & 0xf000f) * ((x>>i) & (0x1111-(1<<(i<<2))));
         }
         BitMatrix4((x >> 16) as u16)
