@@ -1,4 +1,6 @@
 use std::fmt;
+use bitintr::*;
+
 // use itertools::Itertools;
 
 // -----------------------------------------------------------------
@@ -145,6 +147,19 @@ impl From<BitMatrix4> for BitPermTT4 {
     }
 }
 
+// impl From<BitPermPoly4> for BitPermTT4 {
+    // fn from(bpp3: BitPermPoly3) -> Self {
+        // let mut p = bpp3.0;
+        // swap_mask_shift_u32(&mut p, 0xff00, 8);
+        // swap_mask_shift_u32(&mut p, 0xaaaa, 15);
+        // swap_mask_shift_u32(&mut p, 0xff00, 8);
+        // swap_mask_shift_u32(&mut p, 0xcccc, 14);
+        // swap_mask_shift_u32(&mut p, 0xff00, 8);
+        // swap_mask_shift_u32(&mut p, 0xf0f0, 12);
+        // BitPermTT3(p)
+    // }
+// }
+
 impl fmt::Debug for BitPermTT4 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "BitPermTT4({:#018x})", self.0)
@@ -230,14 +245,15 @@ impl BitMatrix4 {
     pub fn inverse(&self) -> Self {
         let mut x = self.0 as u32;
         x += 0x84210000;
-        /*
         for i in 0..4 {
-            let pivot = Self::leadz((x>>i) & ((0x1111 - (1<<i)) + 1)) >> 2;
+            // let pivot = Self::leadz((x>>i) & (0x1111 << (i<<2))) >> 2;
+            let pivot = ((x>>i) & (0x1111 << (i<<2))).tzcnt() >> 2;
+            let pivot_bit = ((x>>i) & (0x1111 << (i<<2))).blsi();
             x = Self::swap_row(x, i, pivot);
-            x ^= ((x>>(i<<2)) & 0xf000f) * ((x>>i) & (0x1111-(1<<i)));
+            x ^= ((x>>(i<<2)) & 0xf000f) * ((x>>i) & (0x1111-(1<<(i<<2))));
         }
         BitMatrix4((x >> 16) as u16)
-        */
+        /*
         // println!("{}", BitMatrix4(x as u16)); // println!("{}", BitMatrix4((x>>16) as u16)); 
         let pivot = Self::leadz(x & 0x1111) >> 2;
         x = Self::swap_row(x, 0, pivot);
@@ -257,8 +273,16 @@ impl BitMatrix4 {
         println!("{}", BitMatrix4(x as u16)); println!("{}", BitMatrix4((x>>16) as u16)); 
         // println!("{}", BitMatrix4(x as u16)); // println!("{}", BitMatrix4((x>>16) as u16)); 
         BitMatrix4((x >> 16) as u16)
+        */
     }
 
+}
+
+impl From<BitPermTT4> for BitMatrix4 {
+    fn from(bptt4: BitPermTT4) -> Self {
+        let x = bptt4.0 as u64;
+        BitMatrix4((((x >> 4) & 0xff) ^ ((x >> 8) & 0xf00) ^ ((x >> 20) & 0xf000)) as u16)
+    }
 }
 
 impl fmt::Debug for BitMatrix4 {
@@ -346,6 +370,7 @@ mod test {
     #[test]
     fn test_bit_matrix4_inverse() {
         assert_eq!(BitMatrix4(0x53e4).inverse(), BitMatrix4(0xe1d9));
+        assert_eq!(BitMatrix4(0xe1d9).inverse(), BitMatrix4(0x53e4));
         assert_eq!(BitMatrix4(0x53e4).inverse().mul(BitMatrix4(0x53e4)), BitMatrix4::ID);
         assert_eq!(BitMatrix4::reverse().inverse(), BitMatrix4::reverse());
         assert_eq!(BitMatrix4::ID.inverse(), BitMatrix4::ID);
