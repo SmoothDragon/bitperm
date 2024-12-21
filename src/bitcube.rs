@@ -32,10 +32,27 @@ fn swap_mask_shift_u64(y: &mut u64, mask: u64, shift: usize) -> () {
 }
 
 impl BitCube4 {
-    pub fn rotate_x(self) -> Self { todo!() }
-    pub fn rotate_y(self) -> Self { todo!() }
-    // 23 32 31
-    // 01 10 20
+    // pub fn rotate_x(self) -> Self { todo!() }
+
+    /// 2x2x2 Example: 01 23 | 45 67 => 45 01 | 67 23 
+    pub fn rotate_x(self) -> Self { 
+        let mut cube = self.0;
+        // Swap 2x2 blocks front <-> back
+        swap_mask_shift_u64(&mut cube, 0x00ff_00ff_00ff_00ff_u64, 8);
+        // Swap diagonal 2x2 blocks
+        swap_mask_shift_u64(&mut cube, 0x0000_0000_00ff_00ff_u64, 40);
+        // Within 2x2 blocks swap front <-> back
+        swap_mask_shift_u64(&mut cube, 0x0f0f_0f0f_0f0f_0f0f_u64, 4);
+        // Within 2x2 blocks swap diagonal entries
+        swap_mask_shift_u64(&mut cube, 0x0000_0f0f_0000_0f0f_u64, 20);
+        BitCube4(cube)
+    }
+
+    /// 2x2x2 Example: 01 23 | 45 67 => 20 31 | 64 75 
+    /// The z-rotation is the easiest to understand since the rotation happens in the xy-plane and
+    /// is copied in the other dimension.
+    /// 23 32 31
+    /// 01 10 20
     pub fn rotate_z(self) -> Self { 
         let mut cube = self.0;
         // Swap 2x2 squares left <-> right
@@ -51,6 +68,7 @@ impl BitCube4 {
 
     pub fn shift_x(self, shift: i8) -> Self { 
         match shift {
+            0 => self,
             1 => Self((self.0 << 1) & 0xeeee_eeee_eeee_eeee_u64),
             2 => Self((self.0 << 2) & 0xdddd_dddd_dddd_dddd_u64),
             3 => Self((self.0 << 3) & 0x8888_8888_8888_8888_u64),
@@ -60,8 +78,32 @@ impl BitCube4 {
             _ => Self(0)
         }
     }
-    // pub fn shift_y(self, i8) -> Self { todo!() }
-    // pub fn shift_z(self, i8) -> Self { todo!() }
+
+    pub fn shift_y(self, shift: i8) -> Self { 
+        match shift {
+            0 => self,
+            1 => Self((self.0 << 4) & 0xfff0_fff0_fff0_fff0_u64),
+            2 => Self((self.0 << 8) & 0xff00_ff00_ff00_ff00_u64),
+            3 => Self((self.0 << 12) & 0xf000_f000_f000_f000_u64),
+            -1 => Self((self.0 >> 4) & 0x0fff_0fff_0fff_0fff_u64),
+            -2 => Self((self.0 >> 8) & 0x00ff_00ff_00ff_00ff_u64),
+            -3 => Self((self.0 >> 12) & 0x000f_000f_000f_000f_u64),
+            _ => Self(0)
+        }
+    }
+
+    pub fn shift_z(self, shift: i8) -> Self { 
+        match shift {
+            0 => self,
+            1 => Self((self.0 << 16) & 0xffff_ffff_ffff_0000_u64),
+            2 => Self((self.0 << 32) & 0xffff_ffff_0000_0000_u64),
+            3 => Self((self.0 << 48) & 0xffff_0000_0000_0000_u64),
+            -1 => Self((self.0 >> 16) & 0x0000_ffff_ffff_ffff_u64),
+            -2 => Self((self.0 >> 32) & 0x0000_0000_ffff_ffff_u64),
+            -3 => Self((self.0 >> 48) & 0x0000_0000_0000_ffff_u64),
+            _ => Self(0)
+        }
+    }
 }
 
 
@@ -96,6 +138,28 @@ mod test {
         assert_eq!(full.shift_x(1), 
                    BitCube4(0xeeee_eeee_eeee_eeee_u64)
                    );
+    }
+
+    #[test]
+    fn test_shift_y() {
+        assert_eq!(full.shift_y(1), 
+                   BitCube4(0xfff0_fff0_fff0_fff0_u64)
+                   );
+    }
+
+    #[test]
+    fn test_shift_z() {
+        assert_eq!(full.shift_z(1), 
+                   BitCube4(0xffff_ffff_ffff_0000_u64)
+                   );
+    }
+
+    #[test]
+    fn test_rotate_x() {
+        assert_eq!(full.rotate_x(), full);
+        assert_eq!(center_x.rotate_x(), center_x);
+        assert_eq!(center_y.rotate_x(), center_z);
+        assert_eq!(center_z.rotate_x(), center_y);
     }
 
     #[test]
