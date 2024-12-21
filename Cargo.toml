@@ -6,5 +6,15 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-bitintr = "0.3.0"
+# bitintr = "0.3.0"
 # bitwise = "0.1.1"
+# criterion = "0.5.1"
+# iterator = "0.1.0"
+nonzero = "0.2.0"
+
+[dev-dependencies]
+criterion = { version = "0.5.1", features = ["html_reports"] }
+
+[[bench]]
+name = "bit_benchmark"
+harness = false

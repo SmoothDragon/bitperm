@@ -4,12 +4,119 @@ use std::fmt;
 // use itertools::Itertools;
 
 // -----------------------------------------------------------------
-// Bit Permutation over 3 bits represented as a truth table in a u32
+// 2D geometric operations on an 8x8 grid
 // -----------------------------------------------------------------
 
-#[derive(PartialEq)]
-pub struct BitPermTT3(u32);
+#[inline]  // TODO: Make this general for all u16, u32, u64, u128
+fn popcnt(y: u64) -> u64 {
+    let mut y = y;
+    y = ((y & 0xaaaaaaaaaaaaaaaa) >> 1) + (y & 0x5555555555555555);
+    y = ((y & 0xcccccccccccccccc) >> 2) + (y & 0x3333333333333333);
+    y = ((y & 0xf0f0f0f0f0f0f0f0) >> 4) + (y & 0x0f0f0f0f0f0f0f0f);
+    y += y >> 8;
+    y += y >> 16;
+    y += y >> 32;
+    y & 0x7f
+}
 
+#[inline]
+fn r_circ_shift(x: u64, shift: usize) -> u64 {
+    ((x & 0xfffffffffffffffe) >> shift) ^ ((x & 0x1) << (64-shift))
+}
+
+#[inline]
+fn l_circ_shift(x: u64, shift: usize) -> u64 {
+    ((x & 0x7fffffffffffffff) << shift) ^ ((x & 0x8000000000000000) >> (64 - shift))
+}
+
+#[derive(PartialEq)]
+pub struct Grid8x8(u64);
+
+impl fmt::Debug for Grid8x8 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "Grid8x8({:#010x})", self.0)
+    } 
+} 
+
+impl fmt::Display for Grid8x8 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", 
+            (0..64)
+            .map(|x| format!("{}{}", if (self.0 >> x) & 0x1 == 1 { "#" } else { "." },
+                if x%8 ==7 { "\n" } else { "" }))
+            .collect::<String>()
+            )
+
+        // let output = (0..64)
+            // .fold(f, |mut f, x| {
+                // let _ = write!(f, "{}{}", if (self.0 >> x) & 0x1 == 1 { "#" } else { "." },
+                // if x%8 ==7 { "\n" } else { "" });
+                // f
+            // });
+        // output
+    } 
+} 
+
+impl Grid8x8 {
+    pub fn shift_n(self) -> Option<Self> {
+        let result = self.0 >> 8;
+        if popcnt(result) == popcnt(self.0) {
+            Some(Self(result))
+        } else {
+            None
+        }
+    }
+
+    pub fn shift_w(self) -> Option<Self> {
+        let result = r_circ_shift(self.0, 1);
+        if result & 0x0101010101010101 == 0 {
+            Some(Self(result))
+        } else {
+            None
+        }
+    }
+
+    pub fn shift_s(self) -> Self {
+        Self(self.0 << 8)
+    }
+    pub fn shift_e(self) -> Self {
+        Self(self.0 << 1)
+    }
+    // pub fn shift_w(self) -> Self {
+        // Self(self.0 >> 1)
+    // }
+}
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_grid8x8_display() {
+        assert_eq!(format!("{}", Grid8x8(0x8040201008040201)), 
+            "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
+    }
+
+    #[test]
+    fn test_popcnt() {
+        assert_eq!(popcnt(0xf00f), 8);
+        assert_eq!(popcnt(0xffffffffffffffff), 64);
+        assert_eq!(popcnt(0xfffff0000000000f), 24);
+    }
+
+    #[test]
+    fn test_shift_n() {
+        assert_eq!(Grid8x8(0xf00f).shift_n(), None);
+        assert_eq!(Grid8x8(0xf00f00).shift_n(), Some(Grid8x8(0xf00f)));
+    }
+
+    // #[test]
+    // fn test_shift_w() {
+        // assert_eq!(Grid8x8(0xf00f).shift_w(), None);
+        // assert_eq!(Grid8x8(0xf00f00).shift_w(), Some(Grid8x8(0xf00f)));
+    // }
+}
+/*
 #[inline]  // TODO: Make this general for all u16, u32, u64, u128
 fn swap_mask_shift_u32(y: &mut u32, mask: u32, shift: usize) -> () {
    *y ^= (*y >> shift) & mask;
@@ -53,11 +160,6 @@ impl BitPermTT3 {
     }
 }
 
-impl fmt::Debug for BitPermTT3 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "BitPermTT3({:#010x})", self.0)
-    } 
-} 
 
 // ---------------------------------------------------------------------
 // Bit Permutation over 3 bits represented as three polynomials in a u32
@@ -293,17 +395,6 @@ impl fmt::Debug for BitMatrix4 {
     } 
 } 
 
-impl fmt::Display for BitMatrix4 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", 
-            (0..4)
-            .map(|x| format!("{:#06b}\n", (self.0 >> ((3-x)<<2)) & 0xf))
-            .collect::<String>()
-            // .join("")
-            )
-    } 
-} 
-
 #[cfg(test)]
 mod test {
     use super::*;
@@ -380,3 +471,4 @@ mod test {
     }
     */
 }
+*/
