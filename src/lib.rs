@@ -1,3 +1,5 @@
+#![feature(unbounded_shifts)]
+
 mod bitperm;
 pub use crate::bitperm::*;
 
