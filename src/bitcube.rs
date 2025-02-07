@@ -138,18 +138,18 @@ impl fmt::Display for BitCube4 {
 mod test {
     use super::*;
 
-    const full: BitCube4 = BitCube4(0xffff_ffff_ffff_ffff_u64);
-    const order: BitCube4 = BitCube4(0xfedc_ba98_7654_3210_u64);
-    const upper_right_2x4x2: BitCube4 = BitCube4(0xcccc_cccc_0000_0000_u64);
-    const lower_right_2x4x2: BitCube4 = BitCube4(0x0000_0000_cccc_cccc_u64);
-    const lower_left_2x4x2: BitCube4 = BitCube4(0x0000_0000_3333_3333_u64);
-    const center_x: BitCube4 = BitCube4(0x0000_0ff0_0ff0_0000_u64);
-    const center_y: BitCube4 = BitCube4(0x0000_6666_6666_0000_u64);
-    const center_z: BitCube4 = BitCube4(0x0660_0660_0660_0660_u64);
+    const FULL: BitCube4 = BitCube4(0xffff_ffff_ffff_ffff_u64);
+    const ORDER: BitCube4 = BitCube4(0xfedc_ba98_7654_3210_u64);
+    const UPPER_RIGHT_2X4X2: BitCube4 = BitCube4(0xcccc_cccc_0000_0000_u64);
+    const LOWER_RIGHT_2X4X2: BitCube4 = BitCube4(0x0000_0000_cccc_cccc_u64);
+    const LOWER_LEFT_2X4X2: BitCube4 = BitCube4(0x0000_0000_3333_3333_u64);
+    const CENTER_X: BitCube4 = BitCube4(0x0000_0ff0_0ff0_0000_u64);
+    const CENTER_Y: BitCube4 = BitCube4(0x0000_6666_6666_0000_u64);
+    const CENTER_Z: BitCube4 = BitCube4(0x0660_0660_0660_0660_u64);
 
     #[test]
     fn test_debug() {
-        assert_eq!(format!("{:?}", order),
+        assert_eq!(format!("{:?}", ORDER),
             "BitCube4(0xfedcba9876543210)\n1100 1110 1101 1111\n0100 0110 0101 0111\n1000 1010 1001 1011\n0000 0010 0001 0011"
         );
 
@@ -157,7 +157,7 @@ mod test {
 
     #[test]
     fn test_display() {
-        assert_eq!(format!("{:}", order),
+        assert_eq!(format!("{:}", ORDER),
             "1100 1110 1101 1111\n0100 0110 0101 0111\n1000 1010 1001 1011\n0000 0010 0001 0011"
         );
 
@@ -165,49 +165,49 @@ mod test {
 
     #[test]
     fn test_shift_x() {
-        assert_eq!(full.shift_x(1), 
+        assert_eq!(FULL.shift_x(1), 
                    BitCube4(0xeeee_eeee_eeee_eeee_u64)
                    );
     }
 
     #[test]
     fn test_shift_y() {
-        assert_eq!(full.shift_y(1), 
+        assert_eq!(FULL.shift_y(1), 
                    BitCube4(0xfff0_fff0_fff0_fff0_u64)
                    );
     }
 
     #[test]
     fn test_shift_z() {
-        assert_eq!(full.shift_z(1), 
+        assert_eq!(FULL.shift_z(1), 
                    BitCube4(0xffff_ffff_ffff_0000_u64)
                    );
     }
 
     #[test]
     fn test_rotate_x() {
-        assert_eq!(full.rotate_x(), full);
-        assert_eq!(center_x.rotate_x(), center_x);
-        assert_eq!(center_y.rotate_x(), center_z);
-        assert_eq!(center_z.rotate_x(), center_y);
+        assert_eq!(FULL.rotate_x(), FULL);
+        assert_eq!(CENTER_X.rotate_x(), CENTER_X);
+        assert_eq!(CENTER_Y.rotate_x(), CENTER_Z);
+        assert_eq!(CENTER_Z.rotate_x(), CENTER_Y);
     }
 
     #[test]
     fn test_rotate_y() {
-        assert_eq!(full.rotate_y(), full);
-        assert_eq!(upper_right_2x4x2.rotate_y(), lower_right_2x4x2);
-        assert_eq!(lower_right_2x4x2.rotate_y(), lower_left_2x4x2);
-        assert_eq!(center_x.rotate_y(), center_z);
-        assert_eq!(center_y.rotate_y(), center_y);
-        assert_eq!(center_z.rotate_y(), center_x);
+        assert_eq!(FULL.rotate_y(), FULL);
+        assert_eq!(UPPER_RIGHT_2X4X2.rotate_y(), LOWER_RIGHT_2X4X2);
+        assert_eq!(LOWER_RIGHT_2X4X2.rotate_y(), LOWER_LEFT_2X4X2);
+        assert_eq!(CENTER_X.rotate_y(), CENTER_Z);
+        assert_eq!(CENTER_Y.rotate_y(), CENTER_Y);
+        assert_eq!(CENTER_Z.rotate_y(), CENTER_X);
     }
 
     #[test]
     fn test_rotate_z() {
-        assert_eq!(full.rotate_z(), full);
-        assert_eq!(center_x.rotate_z(), center_y);
-        assert_eq!(center_y.rotate_z(), center_x);
-        assert_eq!(center_z.rotate_z(), center_z);
+        assert_eq!(FULL.rotate_z(), FULL);
+        assert_eq!(CENTER_X.rotate_z(), CENTER_Y);
+        assert_eq!(CENTER_Y.rotate_z(), CENTER_X);
+        assert_eq!(CENTER_Z.rotate_z(), CENTER_Z);
     }
 
 }

@@ -7,27 +7,14 @@ use std::fmt;
 // 2D geometric operations on an 8x8 grid
 // -----------------------------------------------------------------
 
-#[inline]  // TODO: Make this general for all u16, u32, u64, u128
-fn popcnt(y: u64) -> u64 {
-    let mut y = y;
-    y = ((y & 0xaaaaaaaaaaaaaaaa) >> 1) + (y & 0x5555555555555555);
-    y = ((y & 0xcccccccccccccccc) >> 2) + (y & 0x3333333333333333);
-    y = ((y & 0xf0f0f0f0f0f0f0f0) >> 4) + (y & 0x0f0f0f0f0f0f0f0f);
-    y += y >> 8;
-    y += y >> 16;
-    y += y >> 32;
-    y & 0x7f
-}
+// -----------------------------------------------------------------
+// 8x8 square space represented by the 64 bits in a u64
+// -----------------------------------------------------------------
+// Position at (x,y) = x + 8*y
+// The low bit corresponds to the upper left most position.
+// The high bit corresponds to the lower right most position.
+// Rotations will happen from the center of the square.
 
-#[inline]
-fn r_circ_shift(x: u64, shift: usize) -> u64 {
-    ((x & 0xfffffffffffffffe) >> shift) ^ ((x & 0x1) << (64-shift))
-}
-
-#[inline]
-fn l_circ_shift(x: u64, shift: usize) -> u64 {
-    ((x & 0x7fffffffffffffff) << shift) ^ ((x & 0x8000000000000000) >> (64 - shift))
-}
 
 #[derive(PartialEq)]
 pub struct Grid8x8(u64);
@@ -58,9 +45,17 @@ impl fmt::Display for Grid8x8 {
 } 
 
 impl Grid8x8 {
-    pub fn shift_n(self) -> Option<Self> {
-        let result = self.0 >> 8;
-        if popcnt(result) == popcnt(self.0) {
+    pub fn unbounded_shift_n(self) -> Self {
+        Self(self.0.unbounded_shr(8))
+    }
+
+    pub fn unbounded_shift_s(self) -> Self {
+        Self(self.0.unbounded_shl(8))
+    }
+
+    pub fn checked_shift_n(self) -> Option<Self> {
+        let result = self.0.unbounded_shr(8);
+        if result.count_ones() == self.0.count_ones() {
             Some(Self(result))
         } else {
             None
@@ -68,7 +63,7 @@ impl Grid8x8 {
     }
 
     pub fn shift_w(self) -> Option<Self> {
-        let result = r_circ_shift(self.0, 1);
+        let result = self.0.rotate_right(1);
         if result & 0x0101010101010101 == 0 {
             Some(Self(result))
         } else {
@@ -95,19 +90,19 @@ mod test {
     fn test_grid8x8_display() {
         assert_eq!(format!("{}", Grid8x8(0x8040201008040201)), 
             "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
+        assert_eq!(format!("{}", Grid8x8(0x1)), 
+            "#.......\n........\n........\n........\n........\n........\n........\n........\n");
     }
 
     #[test]
-    fn test_popcnt() {
-        assert_eq!(popcnt(0xf00f), 8);
-        assert_eq!(popcnt(0xffffffffffffffff), 64);
-        assert_eq!(popcnt(0xfffff0000000000f), 24);
+    fn test_unbounded_shift_n() {
+        assert_eq!(Grid8x8(0xf00f).unbounded_shift_n(), Grid8x8(0xf0));
+        assert_eq!(Grid8x8(0xf00f00).unbounded_shift_n(), Grid8x8(0xf00f));
     }
 
-    #[test]
-    fn test_shift_n() {
-        assert_eq!(Grid8x8(0xf00f).shift_n(), None);
-        assert_eq!(Grid8x8(0xf00f00).shift_n(), Some(Grid8x8(0xf00f)));
+    fn test_checked_shift_n() {
+        assert_eq!(Grid8x8(0xf00f).checked_shift_n(), None);
+        assert_eq!(Grid8x8(0xf00f00).checked_shift_n(), Some(Grid8x8(0xf00f)));
     }
 
     // #[test]
