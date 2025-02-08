@@ -1,4 +1,5 @@
 use std::fmt;
+use std::ops::*;
 
 // use itertools::Itertools;
 
@@ -8,7 +9,7 @@ use std::fmt;
 // Position at (x,y,z) = x + 4*y + 16*z
 // Rotations will happen from the center of the cube
 
-#[derive(PartialEq, Clone)]
+#[derive(Copy, Clone, PartialEq)]
 pub struct BitCube4(u64);
 
 #[inline]  // TODO: Make this general for all u16, u32, u64, u128
@@ -108,8 +109,35 @@ impl BitCube4 {
             _ => Self(0)
         }
     }
+
+    /// Given a piece in the 4-cube, shift it towards the origin so that it touches the x, y, and z
+    /// planes
+    pub fn shift_to_origin(self) -> Self {
+        let mut shape = self.0;
+        let z_shift = (shape.trailing_zeros() / 16) * 16;
+        shape = shape.unbounded_shr(z_shift);
+        let xy_proj = shape | shape.unbounded_shr(32);
+        let xy_proj = xy_proj | xy_proj.unbounded_shr(16);
+        let y_shift = (xy_proj.trailing_zeros() / 4) * 4;
+        shape = shape.unbounded_shr(y_shift);
+        let x_shift = xy_proj | xy_proj.unbounded_shr(8);
+        let x_shift = x_shift | x_shift.unbounded_shr(4);
+        shape = shape.unbounded_shr(x_shift.trailing_zeros());
+        Self(shape)
+    }
+
+    pub fn overlap(self, other: Self) -> bool {
+        self.0 & other.0 != 0
+    }
 }
 
+impl const Add for BitCube4 {
+    type Output = Self;
+
+    fn add(self, other: Self) -> Self::Output {
+        Self(self.0 | other.0)
+    }
+}
 
 impl fmt::Debug for BitCube4 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -146,6 +174,7 @@ mod test {
     const CENTER_X: BitCube4 = BitCube4(0x0000_0ff0_0ff0_0000_u64);
     const CENTER_Y: BitCube4 = BitCube4(0x0000_6666_6666_0000_u64);
     const CENTER_Z: BitCube4 = BitCube4(0x0660_0660_0660_0660_u64);
+    const CENTER_ALL: BitCube4 = CENTER_X + CENTER_Y + CENTER_Z;
 
     #[test]
     fn test_debug() {
@@ -161,6 +190,12 @@ mod test {
             "1100 1110 1101 1111\n0100 0110 0101 0111\n1000 1010 1001 1011\n0000 0010 0001 0011"
         );
 
+    }
+
+    #[test]
+    fn test_add() {
+        assert_eq!(FULL + FULL, FULL);
+        assert_eq!(CENTER_X+CENTER_Y+CENTER_Z, CENTER_ALL);
     }
 
     #[test]
@@ -182,6 +217,12 @@ mod test {
         assert_eq!(FULL.shift_z(1), 
                    BitCube4(0xffff_ffff_ffff_0000_u64)
                    );
+    }
+
+    #[test]
+    fn test_shift_to_origin() {
+        assert_eq!(FULL.shift_to_origin(), FULL);
+        assert_eq!((CENTER_X+CENTER_Y).shift_to_origin(), BitCube4(0x0000_0000_6ff6_6ff6));
     }
 
     #[test]
@@ -208,6 +249,11 @@ mod test {
         assert_eq!(CENTER_X.rotate_z(), CENTER_Y);
         assert_eq!(CENTER_Y.rotate_z(), CENTER_X);
         assert_eq!(CENTER_Z.rotate_z(), CENTER_Z);
+    }
+
+    #[test]
+    fn test_overlap() {
+        assert!(CENTER_X.overlap(CENTER_Y));
     }
 
 }
