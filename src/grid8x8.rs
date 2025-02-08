@@ -44,6 +44,9 @@ impl fmt::Display for Grid8x8 {
     } 
 } 
 
+const REP_01:u64 = 0x0101010101010101u64;
+const REP_7F:u64 = 0x7f7f7f7f7f7f7f7fu64;
+
 impl Grid8x8 {
     pub fn unbounded_shift_n(self) -> Self {
         Self(self.0.unbounded_shr(8))
@@ -80,11 +83,36 @@ impl Grid8x8 {
     // pub fn shift_w(self) -> Self {
         // Self(self.0 >> 1)
     // }
+    pub fn rank(self) -> u32 {
+        let mut m = self.0;
+        let mut r = 0u32;
+        let mut pivot;
+        println!("{}", Self(m));
+        while m != 0 {
+            pivot = m & REP_01;
+            if pivot != 0 {
+                r += 1;
+                m ^= (m.unbounded_shr(pivot.trailing_zeros()) & 0xff) * pivot;
+            }
+            m = m.unbounded_shr(1) & REP_7F;
+            println!("{}", Self(m));
+        }
+        r
+    }
+
 }
 
 #[cfg(test)]
 mod test {
     use super::*;
+    
+    const IDENTITY:Grid8x8 = Grid8x8(0x8040201008040201);
+
+    #[test]
+    fn test_rank() {
+        assert_eq!(IDENTITY.rank(), 8);
+        assert_eq!(Grid8x8(0xfedcba9876543210u64).rank(), 4);
+    }
 
     #[test]
     fn test_grid8x8_display() {
