@@ -1,4 +1,3 @@
-#![feature(unbounded_shifts)]
 #![feature(const_trait_impl)]
 
 mod bitperm;

@@ -131,7 +131,7 @@ impl BitCube4 {
     }
 }
 
-impl const Add for BitCube4 {
+impl Add for BitCube4 {
     type Output = Self;
 
     fn add(self, other: Self) -> Self::Output {
@@ -174,7 +174,7 @@ mod test {
     const CENTER_X: BitCube4 = BitCube4(0x0000_0ff0_0ff0_0000_u64);
     const CENTER_Y: BitCube4 = BitCube4(0x0000_6666_6666_0000_u64);
     const CENTER_Z: BitCube4 = BitCube4(0x0660_0660_0660_0660_u64);
-    const CENTER_ALL: BitCube4 = CENTER_X + CENTER_Y + CENTER_Z;
+    const CENTER_ALL: BitCube4 = BitCube4(CENTER_X.0 | CENTER_Y.0 | CENTER_Z.0);
 
     #[test]
     fn test_debug() {

@@ -6,6 +6,8 @@ edition = "2021"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.97"
+bitman = "2.0.1"
 # bitintr = "0.3.0"
 # bitwise = "0.1.1"
 # criterion = "0.5.1"
