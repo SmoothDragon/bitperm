@@ -1,7 +1,4 @@
 use std::fmt;
-// use bitintr::*;
-
-// use itertools::Itertools;
 
 // -----------------------------------------------------------------
 // 2D geometric operations on an 8x8 grid
@@ -140,49 +137,6 @@ mod test {
     // }
 }
 /*
-#[inline]  // TODO: Make this general for all u16, u32, u64, u128
-fn swap_mask_shift_u32(y: &mut u32, mask: u32, shift: usize) -> () {
-   *y ^= (*y >> shift) & mask;
-   *y ^= (*y & mask) << shift;
-   *y ^= (*y >> shift) & mask;
-}
-
-impl From<BitPermPoly3> for BitPermTT3 {
-    fn from(bpp3: BitPermPoly3) -> Self {
-        let mut p = bpp3.0;
-        swap_mask_shift_u32(&mut p, 0xff00, 8);
-        swap_mask_shift_u32(&mut p, 0xaaaa, 15);
-        swap_mask_shift_u32(&mut p, 0xff00, 8);
-        swap_mask_shift_u32(&mut p, 0xcccc, 14);
-        swap_mask_shift_u32(&mut p, 0xff00, 8);
-        swap_mask_shift_u32(&mut p, 0xf0f0, 12);
-        BitPermTT3(p)
-    }
-}
-
-impl BitPermTT3 {
-    pub const ID:BitPermTT3 = BitPermTT3(0x76543210);
-    pub fn id() -> BitPermTT3 {
-        BitPermTT3(0x76543210)
-    }
-
-    pub fn compose(self, other: Self) -> Self {
-        Self(
-            (0..8)
-            .map(|x| ((self.0 >> (((other.0 >> (x<<2)) & 7) << 2)) & 7) << (x<<2))
-            .sum()
-            )
-    }
-
-    pub fn inverse(self) -> Self {
-        Self(
-            (0..8)
-            .map(|x| x << (((self.0 >> (x<<2)) & 7) << 2))
-            .sum()
-            )
-    }
-}
-
 
 // ---------------------------------------------------------------------
 // Bit Permutation over 3 bits represented as three polynomials in a u32

@@ -1,4 +1,6 @@
 use std::fmt;
+
+use crate::bitlib::swap_mask_shift_u32;
 // use bitintr::*;
 
 // use itertools::Itertools;
@@ -13,13 +15,6 @@ pub struct BitPermTT3(u32);
 
 #[derive(PartialEq)]
 pub struct BitPermTT5([u32; 5]);
-
-#[inline]  // TODO: Make this general for all u16, u32, u64, u128
-fn swap_mask_shift_u32(y: &mut u32, mask: u32, shift: usize) -> () {
-   *y ^= (*y >> shift) & mask;
-   *y ^= (*y & mask) << shift;
-   *y ^= (*y >> shift) & mask;
-}
 
 impl From<BitPermPoly3> for BitPermTT3 {
     fn from(bpp3: BitPermPoly3) -> Self {

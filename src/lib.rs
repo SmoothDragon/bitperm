@@ -1,5 +1,8 @@
 #![feature(const_trait_impl)]
 
+mod bitlib;
+pub use crate::bitlib::*;
+
 mod bitperm;
 pub use crate::bitperm::*;
 

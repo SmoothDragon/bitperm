@@ -1,6 +1,8 @@
 use std::fmt;
 use std::ops::*;
 
+use crate::bitlib::swap_mask_shift_u64;
+
 // use itertools::Itertools;
 
 // -----------------------------------------------------------------
@@ -11,13 +13,6 @@ use std::ops::*;
 
 #[derive(Copy, Clone, PartialEq)]
 pub struct BitCube4(u64);
-
-#[inline]  // TODO: Make this general for all u16, u32, u64, u128
-fn swap_mask_shift_u64(y: &mut u64, mask: u64, shift: u32) -> () {
-   *y ^= (*y).unbounded_shr(shift) & mask;
-   *y ^= (*y & mask).unbounded_shl(shift);
-   *y ^= (*y).unbounded_shr(shift) & mask;
-}
 
 impl BitCube4 {
     // 1100
@@ -131,11 +126,20 @@ impl BitCube4 {
     }
 }
 
-impl Add for BitCube4 {
+
+impl BitOr for BitCube4 {
     type Output = Self;
 
-    fn add(self, other: Self) -> Self::Output {
+    fn bitor(self, other: Self) -> Self::Output {
         Self(self.0 | other.0)
+    }
+}
+
+impl BitAnd for BitCube4 {
+    type Output = Self;
+
+    fn bitand(self, other: Self) -> Self::Output {
+        Self(self.0 & other.0)
     }
 }
 
@@ -193,9 +197,9 @@ mod test {
     }
 
     #[test]
-    fn test_add() {
-        assert_eq!(FULL + FULL, FULL);
-        assert_eq!(CENTER_X+CENTER_Y+CENTER_Z, CENTER_ALL);
+    fn test_bitor() {
+        assert_eq!(FULL | FULL, FULL);
+        assert_eq!(CENTER_X | CENTER_Y | CENTER_Z, CENTER_ALL);
     }
 
     #[test]
@@ -222,7 +226,7 @@ mod test {
     #[test]
     fn test_shift_to_origin() {
         assert_eq!(FULL.shift_to_origin(), FULL);
-        assert_eq!((CENTER_X+CENTER_Y).shift_to_origin(), BitCube4(0x0000_0000_6ff6_6ff6));
+        assert_eq!((CENTER_X | CENTER_Y).shift_to_origin(), BitCube4(0x0000_0000_6ff6_6ff6));
     }
 
     #[test]
