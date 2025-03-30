@@ -7,7 +7,8 @@ edition = "2021"
 
 [dependencies]
 anyhow = "1.0.97"
-bitman = "2.0.1"
+flowscad = "0.1.2"
+# bitman = "2.0.1"
 # criterion = "0.5.1"
 # iterator = "0.1.0"
 nonzero = "0.2.0"

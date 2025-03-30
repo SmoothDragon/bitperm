@@ -1,5 +1,6 @@
 use std::fmt;
 use std::ops::*;
+use flowscad::*;
 
 use crate::bitlib::swap_mask_shift_u64;
 
@@ -13,6 +14,29 @@ use crate::bitlib::swap_mask_shift_u64;
 
 #[derive(Copy, Clone, PartialEq)]
 pub struct BitCube4(u64);
+
+
+impl From<u64> for BitCube4 {
+    fn from(x: u64) -> BitCube4 {
+        BitCube4(x)
+    }
+}
+
+impl Into<D3> for BitCube4 {
+    fn into(self) -> D3 {
+        let block = D3::cube(1.0);
+        (0..64)
+            .filter(|ii| (self.0 >> ii) & 1 == 1)
+            .map(|ii| v3(ii&0x3, (ii>>2)&0x3, ii>>4))
+            .map(|xyz| block.clone().translate(xyz))
+            .union()
+            .translate(v3(-2,-2,-2))
+            .scale(10)
+            .color(ColorEnum::Red)
+    }
+}
+
+
 
 impl BitCube4 {
     // 1100
@@ -63,6 +87,24 @@ impl BitCube4 {
         swap_mask_shift_u64(&mut cube, 0x5555_5555_5555_5555_u64, 1);
         // Within 2x2 squares swap diagonal entries
         swap_mask_shift_u64(&mut cube, 0x0505_0505_0505_0505_u64, 5);
+        BitCube4(cube)
+    }
+
+    /// Rotate 120 degrees about the diagonal through the origin and center of the cube.
+    /// 2x2x2 Example: 01 23 | 45 67 => 04 15 | 26 37 
+    /// Use two position involutions: 2 <-> 4 and 3 <-> 5, then 1 <-> 2 and 5 <-> 6.
+    /// For the 4-cube, rotate the position of all the 2-cubes, 
+    /// then rotate all the 2-cubes in place.
+    pub fn rotate_d(self) -> Self { 
+        let mut cube = self.0;
+        // Swap sub-cubes 2 <-> 4 and 3 <-> 5
+        swap_mask_shift_u64(&mut cube, 0x0000_0000_ff00_ff00_u64, 24);
+        // Swap sub-cubes 1 <-> 2 and 5 <-> 6
+        swap_mask_shift_u64(&mut cube, 0x00cc_00cc_00cc_00cc_u64, 6);
+        // Swap 2 <-> 4 and 3 <-> 5 in each sub-cube
+        swap_mask_shift_u64(&mut cube, 0x0000_f0f0_0000_f0f0_u64, 12);
+        // Swap 1 <-> 2 and 5 <-> 6 in each sub-cube
+        swap_mask_shift_u64(&mut cube, 0x0a0a_0a0a_0a0a_0a0a_u64, 3);
         BitCube4(cube)
     }
 
@@ -179,6 +221,14 @@ mod test {
     const CENTER_Y: BitCube4 = BitCube4(0x0000_6666_6666_0000_u64);
     const CENTER_Z: BitCube4 = BitCube4(0x0660_0660_0660_0660_u64);
     const CENTER_ALL: BitCube4 = BitCube4(CENTER_X.0 | CENTER_Y.0 | CENTER_Z.0);
+    const SUBCUBE_0: BitCube4 = BitCube4(0x0033_0033_u64);
+    const SUBCUBE_1: BitCube4 = BitCube4(0x00cc_00cc_u64);
+    const SUBCUBE_2: BitCube4 = BitCube4(0x3300_3300_u64);
+    const SUBCUBE_3: BitCube4 = BitCube4(0xcc00_cc00_u64);
+    const SUBCUBE_4: BitCube4 = BitCube4(0x0033_0033_0000_0000_u64);
+    const SUBCUBE_5: BitCube4 = BitCube4(0x00cc_00cc_0000_0000_u64);
+    const SUBCUBE_6: BitCube4 = BitCube4(0x3300_3300_0000_0000_u64);
+    const SUBCUBE_7: BitCube4 = BitCube4(0xcc00_cc00_0000_0000_u64);
 
     #[test]
     fn test_debug() {
@@ -235,6 +285,8 @@ mod test {
         assert_eq!(CENTER_X.rotate_x(), CENTER_X);
         assert_eq!(CENTER_Y.rotate_x(), CENTER_Z);
         assert_eq!(CENTER_Z.rotate_x(), CENTER_Y);
+        assert_eq!(BitCube4(0xf).rotate_x(), BitCube4(0xf000));
+        assert_eq!(BitCube4(0xf000).rotate_x(), BitCube4(0xf000000000000000));
     }
 
     #[test]
@@ -245,6 +297,7 @@ mod test {
         assert_eq!(CENTER_X.rotate_y(), CENTER_Z);
         assert_eq!(CENTER_Y.rotate_y(), CENTER_Y);
         assert_eq!(CENTER_Z.rotate_y(), CENTER_X);
+        assert_eq!(BitCube4(0xf).rotate_y(), BitCube4(0x0001000100010001));
     }
 
     #[test]
@@ -253,6 +306,23 @@ mod test {
         assert_eq!(CENTER_X.rotate_z(), CENTER_Y);
         assert_eq!(CENTER_Y.rotate_z(), CENTER_X);
         assert_eq!(CENTER_Z.rotate_z(), CENTER_Z);
+        assert_eq!(BitCube4(0xf).rotate_z(), BitCube4(0x8888));
+    }
+
+    #[test]
+    fn test_rotate_d() {
+        assert_eq!(FULL.rotate_d(), FULL);
+        assert_eq!(SUBCUBE_0.rotate_d(), SUBCUBE_0);
+        assert_eq!(SUBCUBE_1.rotate_d(), SUBCUBE_2);
+        assert_eq!(SUBCUBE_2.rotate_d(), SUBCUBE_4);
+        assert_eq!(SUBCUBE_4.rotate_d(), SUBCUBE_1);
+        assert_eq!(SUBCUBE_3.rotate_d(), SUBCUBE_6);
+        assert_eq!(SUBCUBE_6.rotate_d(), SUBCUBE_5);
+        assert_eq!(SUBCUBE_5.rotate_d(), SUBCUBE_3);
+        assert_eq!(SUBCUBE_7.rotate_d(), SUBCUBE_7);
+        assert_eq!(CENTER_X.rotate_d(), CENTER_Y);
+        assert_eq!(CENTER_Y.rotate_d(), CENTER_Z);
+        assert_eq!(CENTER_Z.rotate_d(), CENTER_X);
     }
 
     #[test]
