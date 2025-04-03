@@ -3,6 +3,7 @@ use std::ops::*;
 use flowscad::*;
 
 use crate::bitlib::swap_mask_shift_u64;
+use crate::bitcube3::BitCube3;
 
 // use itertools::Itertools;
 
@@ -13,11 +14,25 @@ use crate::bitlib::swap_mask_shift_u64;
 // Rotations will happen from the center of the cube
 
 #[derive(Copy, Clone, PartialEq)]
-pub struct BitCube4(u64);
+pub struct BitCube4(pub u64);
 
 
 impl From<u64> for BitCube4 {
     fn from(x: u64) -> BitCube4 {
+        BitCube4(x)
+    }
+}
+
+/// Embedding a BitCube3 into a BitCube4 requires moving the three 3x3
+/// planes into the first three 4x4 planes, while adding a bit to extend
+/// the row length from 3 to 4.
+impl From<BitCube3> for BitCube4 {
+    fn from(bc3: BitCube3) -> BitCube4 {
+        let mut x = bc3.0 as u64;
+        // Shift the plane start index from 0,9,18 to 0,16,32
+        x = (x & 0o777) ^ ((x & 0o777000) << 7) ^ ((x & 0o777000000) << 14);
+        // Shift the row start index from 0,3,6 to 0,4,8
+        x = (x & 0x700070007) ^ ((x & 0x3800380038) << 1) ^ ((x & 0x01c001c001c0) << 2);
         BitCube4(x)
     }
 }
@@ -323,11 +338,20 @@ mod test {
         assert_eq!(CENTER_X.rotate_d(), CENTER_Y);
         assert_eq!(CENTER_Y.rotate_d(), CENTER_Z);
         assert_eq!(CENTER_Z.rotate_d(), CENTER_X);
+        assert_eq!(BitCube4(0x1011f).rotate_d(), BitCube4(0x0000000100011113));
     }
 
     #[test]
     fn test_overlap() {
         assert!(CENTER_X.overlap(CENTER_Y));
+    }
+
+    #[test]
+    fn test_into_bitperm3() {
+        assert_eq!(BitCube4::from(BitCube3(0o777777777)), BitCube4(0x77707770777));
+        assert_eq!(BitCube4::from(BitCube3(0o700000000)), BitCube4(0x70000000000));
+        assert_eq!(BitCube4::from(BitCube3(0o76543210)), BitCube4(0x7605430210));
+
     }
 
 }

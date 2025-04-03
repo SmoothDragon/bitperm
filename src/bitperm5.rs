@@ -1,4 +1,5 @@
 use std::fmt;
+use flowscad;
 
 use crate::bitlib::swap_mask_shift_u32;
 // use bitintr::*;

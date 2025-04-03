@@ -6,6 +6,9 @@ pub use crate::bitlib::*;
 mod bitperm;
 pub use crate::bitperm::*;
 
+mod bitcube3;
+pub use crate::bitcube3::*;
+
 mod bitcube4;
 pub use crate::bitcube4::*;
 
