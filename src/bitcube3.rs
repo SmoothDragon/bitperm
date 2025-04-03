@@ -101,40 +101,19 @@ impl BitCube3 {
         BitCube3(cube)
     }
 
-    // pub fn rotate_d(self) -> Self { 
-        // Self(u32::try_from(
-            // bitcube4::BitCube4(self.0 as u64).rotate_d().0 & 0xffffffff
-        // ).unwrap())
-    // }
-
-    /*
     /// Rotate 120 degrees about the diagonal through the origin and center of the cube.
-    /// 2x2x2 Example: 01 23 | 45 67 => 04 15 | 26 37 
-    /// Use two position involutions: 2 <-> 4 and 3 <-> 5, then 1 <-> 2 and 5 <-> 6.
-    /// For the 4-cube, rotate the position of all the 2-cubes, 
-    /// then rotate all the 2-cubes in place.
+    /// TODO: Figure out a faster way than using BitCube4
     pub fn rotate_d(self) -> Self { 
-        let mut cube = self.0;
-        // Swap sub-cubes 2 <-> 4 and 3 <-> 5
-        swap_mask_shift_u64(&mut cube, 0x0000_0000_ff00_ff00_u64, 24);
-        // Swap sub-cubes 1 <-> 2 and 5 <-> 6
-        swap_mask_shift_u64(&mut cube, 0x00cc_00cc_00cc_00cc_u64, 6);
-        // Swap 2 <-> 4 and 3 <-> 5 in each sub-cube
-        swap_mask_shift_u64(&mut cube, 0x0000_f0f0_0000_f0f0_u64, 12);
-        // Swap 1 <-> 2 and 5 <-> 6 in each sub-cube
-        swap_mask_shift_u64(&mut cube, 0x0a0a_0a0a_0a0a_0a0a_u64, 3);
-        BitCube4(cube)
+        Self::from(BitCube4::from(self).rotate_d())
     }
 
     pub fn shift_x(self, shift: i8) -> Self { 
         match shift {
             0 => self,
-            1 => Self((self.0.unbounded_shl(1)) & 0xeeee_eeee_eeee_eeee_u64),
-            2 => Self((self.0.unbounded_shl(2)) & 0xdddd_dddd_dddd_dddd_u64),
-            3 => Self((self.0.unbounded_shl(3)) & 0x8888_8888_8888_8888_u64),
-            -1 => Self((self.0.unbounded_shr(1)) & 0x7777_7777_7777_7777_u64),
-            -2 => Self((self.0.unbounded_shr(2)) & 0x3333_3333_3333_3333_u64),
-            -3 => Self((self.0.unbounded_shr(3)) & 0x1111_1111_1111_1111_u64),
+            1 => Self((self.0.unbounded_shl(1)) & 0o666_666_666_u32),
+            2 => Self((self.0.unbounded_shl(2)) & 0o444_444_444_u32),
+            -1 => Self((self.0.unbounded_shl(1)) & 0o333_333_333_u32),
+            -2 => Self((self.0.unbounded_shl(2)) & 0o111_111_111_u32),
             _ => Self(0)
         }
     }
@@ -142,12 +121,10 @@ impl BitCube3 {
     pub fn shift_y(self, shift: i8) -> Self { 
         match shift {
             0 => self,
-            1 => Self((self.0 << 4) & 0xfff0_fff0_fff0_fff0_u64),
-            2 => Self((self.0 << 8) & 0xff00_ff00_ff00_ff00_u64),
-            3 => Self((self.0 << 12) & 0xf000_f000_f000_f000_u64),
-            -1 => Self((self.0 >> 4) & 0x0fff_0fff_0fff_0fff_u64),
-            -2 => Self((self.0 >> 8) & 0x00ff_00ff_00ff_00ff_u64),
-            -3 => Self((self.0 >> 12) & 0x000f_000f_000f_000f_u64),
+            1 => Self((self.0.unbounded_shl(3)) & 0o770_770_770_u32),
+            2 => Self((self.0.unbounded_shl(6)) & 0o700_700_700_u32),
+            -1 => Self((self.0.unbounded_shr(3)) & 0o077_077_077_u32),
+            -2 => Self((self.0.unbounded_shr(6)) & 0o007_007_007_u32),
             _ => Self(0)
         }
     }
@@ -155,16 +132,15 @@ impl BitCube3 {
     pub fn shift_z(self, shift: i8) -> Self { 
         match shift {
             0 => self,
-            1 => Self((self.0 << 16) & 0xffff_ffff_ffff_0000_u64),
-            2 => Self((self.0 << 32) & 0xffff_ffff_0000_0000_u64),
-            3 => Self((self.0 << 48) & 0xffff_0000_0000_0000_u64),
-            -1 => Self((self.0 >> 16) & 0x0000_ffff_ffff_ffff_u64),
-            -2 => Self((self.0 >> 32) & 0x0000_0000_ffff_ffff_u64),
-            -3 => Self((self.0 >> 48) & 0x0000_0000_0000_ffff_u64),
+            1 => Self((self.0.unbounded_shl(9)) & 0o777_777_000_u32),
+            2 => Self((self.0.unbounded_shl(18)) & 0o777_000_000_u32),
+            -1 => Self((self.0.unbounded_shr(9)) & 0o000_777_777_u32),
+            -2 => Self((self.0.unbounded_shr(18)) & 0o000_000_777_u32),
             _ => Self(0)
         }
     }
 
+    /*
     /// Given a piece in the 4-cube, shift it towards the origin so that it touches the x, y, and z
     /// planes
     pub fn shift_to_origin(self) -> Self {
@@ -267,26 +243,23 @@ mod test {
         assert_eq!(CENTER_X & CENTER_Y & CENTER_Z, BitCube3(0o020_000_u32));
     }
 
-    // #[test]
-    // fn test_shift_x() {
-        // assert_eq!(FULL.shift_x(1), 
-                   // BitCube4(0xeeee_eeee_eeee_eeee_u64)
-                   // );
-    // }
+    #[test]
+    fn test_shift_x() {
+        assert_eq!(FULL.shift_x(1), BitCube3(0o666_666_666_u32));
+        assert_eq!(FULL.shift_x(2), BitCube3(0o444_444_444_u32));
+    }
 
-    // #[test]
-    // fn test_shift_y() {
-        // assert_eq!(FULL.shift_y(1), 
-                   // BitCube4(0xfff0_fff0_fff0_fff0_u64)
-                   // );
-    // }
+    #[test]
+    fn test_shift_y() {
+        assert_eq!(FULL.shift_y(1), BitCube3(0o770_770_770_u32));
+        assert_eq!(FULL.shift_y(-2), BitCube3(0o007_007_007_u32));
+    }
 
-    // #[test]
-    // fn test_shift_z() {
-        // assert_eq!(FULL.shift_z(1), 
-                   // BitCube4(0xffff_ffff_ffff_0000_u64)
-                   // );
-    // }
+    #[test]
+    fn test_shift_z() {
+        assert_eq!(FULL.shift_z(1), BitCube3(0o777_777_000_u32));
+        assert_eq!(FULL.shift_z(-2), BitCube3(0o000_000_777_u32));
+    }
 
     // #[test]
     // fn test_shift_to_origin() {
@@ -327,27 +300,19 @@ mod test {
         assert_eq!(BitCube3(0o4017).rotate_z(), BitCube3(0o400446));
     }
 
-    // #[test]
-    // fn test_rotate_d() {
-        // assert_eq!(FULL.rotate_d(), FULL);
-        // assert_eq!(SUBCUBE_0.rotate_d(), SUBCUBE_0);
-        // assert_eq!(SUBCUBE_1.rotate_d(), SUBCUBE_2);
-        // assert_eq!(SUBCUBE_2.rotate_d(), SUBCUBE_4);
-        // assert_eq!(SUBCUBE_4.rotate_d(), SUBCUBE_1);
-        // assert_eq!(SUBCUBE_3.rotate_d(), SUBCUBE_6);
-        // assert_eq!(SUBCUBE_6.rotate_d(), SUBCUBE_5);
-        // assert_eq!(SUBCUBE_5.rotate_d(), SUBCUBE_3);
-        // assert_eq!(SUBCUBE_7.rotate_d(), SUBCUBE_7);
-        // assert_eq!(CENTER_X.rotate_d(), CENTER_Y);
-        // assert_eq!(CENTER_Y.rotate_d(), CENTER_Z);
-        // assert_eq!(CENTER_Z.rotate_d(), CENTER_X);
-        // assert_eq!(BitCube4(0x1011f).rotate_d(), BitCube4(0x0000000100011113));
-    // }
+    #[test]
+    fn test_rotate_d() {
+        assert_eq!(FULL.rotate_d(), FULL);
+        assert_eq!(CENTER_X.rotate_d(), CENTER_Y);
+        assert_eq!(CENTER_Y.rotate_d(), CENTER_Z);
+        assert_eq!(CENTER_Z.rotate_d(), CENTER_X);
+        assert_eq!(BitCube3(0o1047).rotate_d(), BitCube3(0o100113));
+    }
 
-    // #[test]
-    // fn test_overlap() {
-        // assert!(CENTER_X.overlap(CENTER_Y));
-    // }
+    #[test]
+    fn test_overlap() {
+        assert!(CENTER_X.overlap(CENTER_Y));
+    }
 
     #[test]
     fn test_from_bitperm4() {
