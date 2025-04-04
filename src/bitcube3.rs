@@ -57,6 +57,11 @@ impl Into<D3> for BitCube3 {
 /// 012 | 9ab | ijk
 impl BitCube3 {
 
+    /// Count the number of cubes (ones) in the BitCube
+    pub fn count_cubes(self) -> u32 {
+        self.0.count_ones()
+    }
+
     /// Easiest to visualize as a z-rotation, but same idea
     pub fn rotate_x(self) -> Self { 
         let mut cube = self.0;
@@ -118,6 +123,16 @@ impl BitCube3 {
         }
     }
 
+    /// Return none if the x-shift would move part of the polycube past an edge.
+    pub fn bounded_shift_x(self, shift: i8) -> Option<Self> { 
+        let shifted = self.shift_x(shift);
+        if self.count_cubes() == shifted.count_cubes() {
+            Some(shifted)
+        } else {
+            None
+        }
+    }
+
     pub fn shift_y(self, shift: i8) -> Self { 
         match shift {
             0 => self,
@@ -129,6 +144,16 @@ impl BitCube3 {
         }
     }
 
+    /// Return none if the y-shift would move part of the polycube past an edge.
+    pub fn bounded_shift_y(self, shift: i8) -> Option<Self> { 
+        let shifted = self.shift_y(shift);
+        if self.count_cubes() == shifted.count_cubes() {
+            Some(shifted)
+        } else {
+            None
+        }
+    }
+
     pub fn shift_z(self, shift: i8) -> Self { 
         match shift {
             0 => self,
@@ -137,6 +162,16 @@ impl BitCube3 {
             -1 => Self((self.0.unbounded_shr(9)) & 0o000_777_777_u32),
             -2 => Self((self.0.unbounded_shr(18)) & 0o000_000_777_u32),
             _ => Self(0)
+        }
+    }
+
+    /// Return none if the z-shift would move part of the polycube past an edge.
+    pub fn bounded_shift_z(self, shift: i8) -> Option<Self> { 
+        let shifted = self.shift_z(shift);
+        if self.count_cubes() == shifted.count_cubes() {
+            Some(shifted)
+        } else {
+            None
         }
     }
 
@@ -250,15 +285,39 @@ mod test {
     }
 
     #[test]
+    fn test_bounded_shift_x() {
+        assert_eq!(FULL.bounded_shift_x(1), None);
+        assert_eq!(CENTER_X.bounded_shift_x(1), None);
+        assert_eq!(CENTER_Y.bounded_shift_x(1), Some(BitCube3(0o444000)));
+        assert_eq!(CENTER_Z.bounded_shift_x(1), Some(BitCube3(0o040040040)));
+    }
+
+    #[test]
     fn test_shift_y() {
         assert_eq!(FULL.shift_y(1), BitCube3(0o770_770_770_u32));
         assert_eq!(FULL.shift_y(-2), BitCube3(0o007_007_007_u32));
     }
 
     #[test]
+    fn test_bounded_shift_y() {
+        assert_eq!(FULL.bounded_shift_y(1), None);
+        assert_eq!(CENTER_X.bounded_shift_y(1), Some(BitCube3(0o700000)));
+        assert_eq!(CENTER_Y.bounded_shift_y(1), None);
+        assert_eq!(CENTER_Z.bounded_shift_y(1), Some(BitCube3(0o200200200)));
+    }
+
+    #[test]
     fn test_shift_z() {
         assert_eq!(FULL.shift_z(1), BitCube3(0o777_777_000_u32));
         assert_eq!(FULL.shift_z(-2), BitCube3(0o000_000_777_u32));
+    }
+
+    #[test]
+    fn test_bounded_shift_z() {
+        assert_eq!(FULL.bounded_shift_z(1), None);
+        assert_eq!(CENTER_X.bounded_shift_z(1), Some(BitCube3(0o070000000)));
+        assert_eq!(CENTER_Y.bounded_shift_z(1), Some(BitCube3(0o222000000)));
+        assert_eq!(CENTER_Z.bounded_shift_z(1), None);
     }
 
     // #[test]
