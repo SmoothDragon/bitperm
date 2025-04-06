@@ -15,8 +15,8 @@ use crate::bitcube4::BitCube4;
 
 #[derive(Copy, Clone, Debug, PartialEq)]
 pub struct BitTroc4 {
-    c4: BitCube4,
-    c3: BitCube3,
+    pub c4: BitCube4,
+    pub c3: BitCube3,
 }
 
 
