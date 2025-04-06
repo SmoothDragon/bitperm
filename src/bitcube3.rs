@@ -86,11 +86,6 @@ impl BitCube3 {
         BitCube3(cube)
     }
 
-    /// Easiest to visualize as a z-rotation, but same idea
-    // pub fn rotate_y(self) -> Self { 
-        // self.rotate_z().rotate_x()
-    // }
-
     /// z-rotation done by two swaps
     /// abc      bc.
     /// ... then a.c
@@ -191,8 +186,8 @@ impl BitCube3 {
         shape = shape.unbounded_shr(x_shift.trailing_zeros());
         Self(shape)
     }
-
     */
+
     pub fn overlap(self, other: Self) -> bool {
         self.0 & other.0 != 0
     }
@@ -255,7 +250,6 @@ mod test {
         assert_eq!(format!("{:?}", ORDER),
           "BitCube3(0o076543210)\n010 101 000\n100 001 111\n000 110 011"
         );
-
     }
 
     #[test]
@@ -263,7 +257,6 @@ mod test {
         assert_eq!(format!("{:}", ORDER),
             "010 101 000\n100 001 111\n000 110 011"
         );
-
     }
 
     #[test]

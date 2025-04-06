@@ -12,5 +12,8 @@ pub use crate::bitcube3::*;
 mod bitcube4;
 pub use crate::bitcube4::*;
 
+mod bittroc4;
+pub use crate::bittroc4::*;
+
 mod grid8x8;
 pub use crate::grid8x8::*;
