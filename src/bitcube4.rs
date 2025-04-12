@@ -391,7 +391,7 @@ mod test {
     }
 
     #[test]
-    fn test_into_bitperm3() {
+    fn test_from_bitperm3() {
         assert_eq!(BitCube4::from(BitCube3(0o777777777)), BitCube4(0x77707770777));
         assert_eq!(BitCube4::from(BitCube3(0o700000000)), BitCube4(0x70000000000));
         assert_eq!(BitCube4::from(BitCube3(0o76543210)), BitCube4(0x7605430210));

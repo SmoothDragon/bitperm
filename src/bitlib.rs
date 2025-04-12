@@ -18,6 +18,7 @@ pub fn swap_mask_shift_u64(y: &mut u64, mask: u64, shift: u32) {
    *y ^= (*y).unbounded_shr(shift) & mask;
 }
 
+/// Useful constants for 4-cube transformations
 pub mod cu64 {
     use crate::bitcube4::BitCube4;
 
@@ -39,4 +40,17 @@ pub mod cu64 {
     pub const SUBCUBE_5: BitCube4 = BitCube4(0x00cc_00cc_0000_0000_u64);
     pub const SUBCUBE_6: BitCube4 = BitCube4(0x3300_3300_0000_0000_u64);
     pub const SUBCUBE_7: BitCube4 = BitCube4(0xcc00_cc00_0000_0000_u64);
+}
+
+/// Useful constants for 3-cube transformations
+pub mod cu27 {
+    use crate::bitcube3::BitCube3;
+
+    pub const FULL: BitCube3 = BitCube3(0o777777777_u32);
+    pub const ORDER: BitCube3 = BitCube3(0o76543210_u32);
+    pub const CENTER: BitCube3 = BitCube3(0o000_020_000_u32);
+    pub const CENTER_X: BitCube3 = BitCube3(0o000_070_000_u32);
+    pub const CENTER_Y: BitCube3 = BitCube3(0o000_222_000_u32);
+    pub const CENTER_Z: BitCube3 = BitCube3(0o020_020_020_u32);
+    pub const CENTER_ALL: BitCube3 = BitCube3(CENTER_X.0 | CENTER_Y.0 | CENTER_Z.0);
 }
