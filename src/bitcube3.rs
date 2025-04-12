@@ -236,6 +236,7 @@ impl fmt::Display for BitCube3 {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::bitcube4::BitCube4;
 
     const FULL: BitCube3 = BitCube3(0o777777777_u32);
     const ORDER: BitCube3 = BitCube3(0o76543210_u32);
