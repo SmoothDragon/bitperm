@@ -1,8 +1,11 @@
 use std::fmt;
 use std::ops::*;
+use std::convert::TryInto;
+use std::convert::TryFrom;
+
 use flowscad::*;
 
-use crate::bitlib::{swap_mask_shift_u32, swap_mask_shift_u64};
+use crate::bitlib::{swap_mask_shift_u32};
 use crate::bitcube4::*;
 
 // use itertools::Itertools;
@@ -35,6 +38,28 @@ impl From<BitCube4> for BitCube3 {
         BitCube3(x as u32)
     }
 }
+
+
+
+/* TODO: How should TryFrom<BitCube4> for BitCube3 work?
+impl TryFrom<u64> for BitCube3 {
+    type Error = ();
+
+    fn try_from(bc4: u64) -> Result<BitCube3, Self::Error> {
+        let mut x = bc4;
+        if x == x & 0x77707770777 {
+            // Shift the row start index from 0,4,8 to 0,3,6
+            x = (x & 0x700070007) ^ ((x>>1) & 0x3800380038) ^ ((x>>2) & 0x01c001c001c0);
+            // Shift the plane start index from 0,16,32 to 0,9,18
+            x = (x & 0o777) ^ ((x>>7) & 0o777000) ^ ((x>>14) & 0o777000000);
+            Ok(BitCube3(x as u32))
+        } else {
+            Err(())
+        }
+    }
+}
+*/
+
 impl Into<D3> for BitCube3 {
     fn into(self) -> D3 {
         let block = D3::cube(1.0);
@@ -55,6 +80,7 @@ impl Into<D3> for BitCube3 {
 /// 678 | fgh | opq
 /// 345 | cde | lmn
 /// 012 | 9ab | ijk
+/// (x,y,z) at x+3*y+9*z
 impl BitCube3 {
 
     /// Count the number of cubes (ones) in the BitCube
@@ -385,4 +411,13 @@ mod test {
         assert_eq!(BitCube3::from(BitCube4(0x70000000000)), BitCube3(0o700000000));
         assert_eq!(BitCube3::from(BitCube4(0x7605430210)), BitCube3(0o76543210));
     }
+
+    // TODO: TryFrom at a future point?
+    // #[test]
+    // fn test_tryfrom_bitcube4() {
+        // assert_eq!(BitCube3::try_from(BitCube4(0x77707770777)).ok(), Some(BitCube3(0o777777777)));
+        // assert_eq!(BitCube3::try_from(BitCube4(0x77707770777077f)).ok(), Some(BitCube3(0o777777777)));
+        // assert_eq!(BitCube3::from(BitCube4(0x70000000000)), BitCube3(0o700000000));
+        // assert_eq!(BitCube3::from(BitCube4(0x7605430210)), BitCube3(0o76543210));
+    // }
 }

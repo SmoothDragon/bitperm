@@ -1,5 +1,8 @@
 use std::fmt;
 use std::ops::*;
+
+use derive_more::*;
+
 use flowscad::*;
 
 use crate::bitlib::swap_mask_shift_u64;
@@ -13,7 +16,9 @@ use crate::bitcube3::BitCube3;
 // Position at (x,y,z) = x + 4*y + 16*z
 // Rotations will happen from the center of the cube
 
-#[derive(Copy, Clone, PartialEq)]
+#[derive(Copy, Clone, PartialEq, 
+    BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, 
+    )]
 pub struct BitCube4(pub u64);
 
 
@@ -34,6 +39,12 @@ impl From<BitCube3> for BitCube4 {
         // Shift the row start index from 0,3,6 to 0,4,8
         x = (x & 0x700070007) ^ ((x & 0x3800380038) << 1) ^ ((x & 0x01c001c001c0) << 2);
         BitCube4(x)
+    }
+}
+
+impl Into<u64> for BitCube4 {
+    fn into(self) -> u64 {
+        self.0
     }
 }
 
@@ -131,7 +142,7 @@ impl BitCube4 {
     pub fn shift_x(self, shift: i8) -> Self { 
         match shift {
             0 => self,
-            1 => Self((self.0.unbounded_shl(1)) & 0xeeee_eeee_eeee_eeee_u64),
+            1 => (self << 1) & 0xeeee_eeee_eeee_eeee_u64,
             2 => Self((self.0.unbounded_shl(2)) & 0xdddd_dddd_dddd_dddd_u64),
             3 => Self((self.0.unbounded_shl(3)) & 0x8888_8888_8888_8888_u64),
             -1 => Self((self.0.unbounded_shr(1)) & 0x7777_7777_7777_7777_u64),
@@ -218,7 +229,7 @@ impl BitCube4 {
     }
 }
 
-
+/*
 impl BitOr for BitCube4 {
     type Output = Self;
 
@@ -227,11 +238,51 @@ impl BitOr for BitCube4 {
     }
 }
 
+impl BitOrAssign for BitCube4 {
+    // rhs is the "right-hand side" of the expression `a |= b`
+    fn bitor_assign(&mut self, rhs: Self) {
+        *self = Self(self.0 | rhs.0)
+    }
+}
+
+
 impl BitAnd for BitCube4 {
     type Output = Self;
 
     fn bitand(self, other: Self) -> Self::Output {
         Self(self.0 & other.0)
+    }
+}
+
+impl BitAndAssign for BitCube4 {
+    // rhs is the "right-hand side" of the expression `a &= b`
+    fn bitand_assign(&mut self, rhs: Self) {
+        *self = Self(self.0 & rhs.0)
+    }
+}
+*/
+
+impl BitAnd<u64> for BitCube4 {
+    type Output = Self;
+
+    fn bitand(self, rhs: u64) -> Self::Output {
+        Self(self.0 & rhs)
+    }
+}
+
+impl Shl<u32> for BitCube4 {
+    type Output = Self;
+
+    fn shl(self, rhs: u32) -> Self::Output {
+        Self(self.0.unbounded_shl(rhs))
+    }
+}
+
+impl Shr<u32> for BitCube4 {
+    type Output = Self;
+
+    fn shr(self, rhs: u32) -> Self::Output {
+        Self(self.0.unbounded_shr(rhs))
     }
 }
 
