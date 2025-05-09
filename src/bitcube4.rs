@@ -1,5 +1,8 @@
 use std::fmt;
 use std::ops::*;
+use std::collections::HashSet;
+use std::iter::FromIterator;
+
 
 use derive_more::*;
 
@@ -16,7 +19,7 @@ use crate::bitcube3::BitCube3;
 // Position at (x,y,z) = x + 4*y + 16*z
 // Rotations will happen from the center of the cube
 
-#[derive(Copy, Clone, PartialEq, 
+#[derive(Copy, Clone, Eq, PartialEq, Hash,
     BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, 
     )]
 pub struct BitCube4(pub u64);
@@ -68,6 +71,27 @@ impl BitCube4 {
     /// Count the number of cubes (ones) in the BitCube
     pub fn count_cubes(self) -> u32 {
         self.0.count_ones()
+    }
+
+    /// Produce all rotations of a BitCube
+    /// Prefer a gray code path through all rotations
+    pub fn rotate_all_set(self) -> HashSet<BitCube4> {
+        let mut vec = Vec::new();
+        let mut x = self;
+        vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_d(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_d(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_d(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_y(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_d();  // One wasted move. There is probably a gray code path that is shorter.
+        x = x.rotate_y(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        HashSet::from_iter(vec.iter().cloned())
     }
 
     // 1100
@@ -446,6 +470,16 @@ mod test {
         assert_eq!(BitCube4::from(BitCube3(0o777777777)), BitCube4(0x77707770777));
         assert_eq!(BitCube4::from(BitCube3(0o700000000)), BitCube4(0x70000000000));
         assert_eq!(BitCube4::from(BitCube3(0o76543210)), BitCube4(0x7605430210));
+
+    }
+
+    #[test]
+    fn test_rotate_all_set() {
+        assert_eq!(BitCube4::rotate_all_set(cu64::CENTER_ALL), HashSet::from([cu64::CENTER_ALL]));
+        assert_eq!(BitCube4::rotate_all_set(cu64::CENTER_X), HashSet::from([cu64::CENTER_X, cu64::CENTER_Y, cu64::CENTER_Z]));
+        assert_eq!(BitCube4::rotate_all_set(cu64::SUBCUBE_0).len(), 8);
+        assert_eq!(BitCube4::rotate_all_set(cu64::SUBCUBE_0), HashSet::from([cu64::SUBCUBE_0, cu64::SUBCUBE_1, cu64::SUBCUBE_2, cu64::SUBCUBE_3, cu64::SUBCUBE_4, cu64::SUBCUBE_5, cu64::SUBCUBE_6, cu64::SUBCUBE_7]));
+        assert_eq!(BitCube4::rotate_all_set(BitCube4(0x3)).len(), 24);
 
     }
 

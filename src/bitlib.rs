@@ -18,6 +18,15 @@ pub fn swap_mask_shift_u64(y: &mut u64, mask: u64, shift: u32) {
    *y ^= (*y).unbounded_shr(shift) & mask;
 }
 
+struct SwapMaskShiftU32 {
+    mask: u32,
+    shift: u32,
+}
+
+impl SwapMaskShiftU32 {
+
+}
+
 /// Useful constants for 4-cube transformations
 pub mod cu64 {
     use crate::bitcube4::BitCube4;
