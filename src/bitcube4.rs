@@ -5,6 +5,7 @@ use std::iter::FromIterator;
 
 
 use derive_more::*;
+use arrayvec::*;
 
 use flowscad::*;
 
@@ -19,11 +20,12 @@ use crate::bitcube3::BitCube3;
 // Position at (x,y,z) = x + 4*y + 16*z
 // Rotations will happen from the center of the cube
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash,
+#[derive(Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord,
     BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, 
     )]
 pub struct BitCube4(pub u64);
 
+pub struct BitCube4Rotations(pub ArrayVec<BitCube4, 24>);
 
 impl From<u64> for BitCube4 {
     fn from(x: u64) -> BitCube4 {
@@ -92,6 +94,30 @@ impl BitCube4 {
         x = x.rotate_y(); vec.push(x);
         for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
         HashSet::from_iter(vec.iter().cloned())
+    }
+
+    /// Produce all rotations of a BitCube
+    /// Prefer a gray code path through all rotations
+    pub fn rotate_all_vec(self) -> ArrayVec::<BitCube4, 24> {
+        let mut vec = ArrayVec::<BitCube4, 24>::new();
+        let mut x = self;
+        vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_d(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_d(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_d(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_y(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_d();  // One wasted move. There is probably a gray code path that is shorter.
+        x = x.rotate_y(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        vec.sort_unstable();
+        let symmetries = vec.partition_dedup().0.len();  // Move duplicates to the end.
+        vec.truncate(symmetries);
+        vec
     }
 
     // 1100
@@ -310,9 +336,15 @@ impl Shr<u32> for BitCube4 {
     }
 }
 
+// impl fmt::Debug for BitCube4 {
+    // fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // write!(f, "BitCube4({:#018x})\n{:}", self.0, self)
+    // } 
+// } 
+
 impl fmt::Debug for BitCube4 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "BitCube4({:#018x})\n{:}", self.0, self)
+        write!(f, "BitCube4({:#018x})", self.0)
     } 
 } 
 
@@ -342,7 +374,7 @@ mod test {
     #[test]
     fn test_debug() {
         assert_eq!(format!("{:?}", cu64::ORDER),
-            "BitCube4(0xfedcba9876543210)\n1100 1110 1101 1111\n0100 0110 0101 0111\n1000 1010 1001 1011\n0000 0010 0001 0011"
+            "BitCube4(0xfedcba9876543210)"
         );
 
     }
@@ -480,6 +512,16 @@ mod test {
         assert_eq!(BitCube4::rotate_all_set(cu64::SUBCUBE_0).len(), 8);
         assert_eq!(BitCube4::rotate_all_set(cu64::SUBCUBE_0), HashSet::from([cu64::SUBCUBE_0, cu64::SUBCUBE_1, cu64::SUBCUBE_2, cu64::SUBCUBE_3, cu64::SUBCUBE_4, cu64::SUBCUBE_5, cu64::SUBCUBE_6, cu64::SUBCUBE_7]));
         assert_eq!(BitCube4::rotate_all_set(BitCube4(0x3)).len(), 24);
+    }
+
+    #[test]
+    fn test_rotate_all_vec() {
+        assert_eq!(BitCube4::rotate_all_vec(cu64::CENTER_ALL).as_slice(), &[cu64::CENTER_ALL]);
+        assert_eq!(BitCube4::rotate_all_vec(cu64::CENTER_X).as_slice(), &[cu64::CENTER_X, cu64::CENTER_Y, cu64::CENTER_Z]);
+        assert_eq!(BitCube4::rotate_all_vec(cu64::SUBCUBE_0).len(), 8);
+        assert_eq!(BitCube4::rotate_all_vec(cu64::SUBCUBE_0).as_slice(), &[BitCube4(0x0000000000330033), BitCube4(0x0000000000cc00cc), BitCube4(0x0000000033003300), BitCube4(0x00000000cc00cc00), BitCube4(0x0033003300000000), BitCube4(0x00cc00cc00000000), BitCube4(0x3300330000000000), BitCube4(0xcc00cc0000000000)]);
+        assert_eq!(BitCube4::rotate_all_vec(cu64::SUBCUBE_0).as_slice(), &[cu64::SUBCUBE_0, cu64::SUBCUBE_1, cu64::SUBCUBE_2, cu64::SUBCUBE_3, cu64::SUBCUBE_4, cu64::SUBCUBE_5, cu64::SUBCUBE_6, cu64::SUBCUBE_7]);
+        assert_eq!(BitCube4::rotate_all_vec(BitCube4(0x3)).len(), 24);
 
     }
 

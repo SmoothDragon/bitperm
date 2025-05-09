@@ -1,4 +1,5 @@
 #![feature(const_trait_impl)]
+#![feature(slice_partition_dedup)]
 
 mod bitlib;
 pub use crate::bitlib::*;

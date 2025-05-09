@@ -126,7 +126,7 @@ mod test {
     #[test]
     fn test_debug() {
         assert_eq!(format!("{:?}", ORDER),
-            "BitTroc4 { c4: BitCube4(0xfedcba9876543210)\n1100 1110 1101 1111\n0100 0110 0101 0111\n1000 1010 1001 1011\n0000 0010 0001 0011, c3: BitCube3(0o076543210)\n010 101 000\n100 001 111\n000 110 011 }"
+            "BitTroc4 { c4: BitCube4(0xfedcba9876543210), c3: BitCube3(0o076543210)\n010 101 000\n100 001 111\n000 110 011 }"
         );
     }
 
