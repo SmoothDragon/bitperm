@@ -67,6 +67,10 @@ pub const ANTIDIAG:BitGrid8 = BitGrid8(0x0102040810204080);
 
 
 impl BitGrid8 {
+    pub fn pentominoes() -> ArrayVec::<BitGrid8, 12> {
+        todo!()
+    }
+
     /// Produce all rotations of a BitGrid object translated towards origin.
     /// Prefer a gray code path through all rotations
     pub fn origin_rotate_all(self) -> ArrayVec::<BitGrid8, 4> {
@@ -204,18 +208,6 @@ impl BitGrid8 {
     }
 
 }
-
-/*
-/// Useful constants for 8-grid transformations
-pub mod bg8 {
-    pub const ALL: u64 = 0xffff_ffff_ffff_ffff;
-    pub const FULL: BitGrid8 = BitGrid8(0xffff_ffff_ffff_ffff_u64);
-    pub const ORDER: BitGrid8 = BitGrid8(0xfedc_ba98_7654_3210_u64);
-    pub const UPPER_RIGHT: BitGrid8 = BitGrid8(0xf0f0_f0f0_u64);
-    pub const LOWER_RIGHT: BitGrid8 = BitGrid8(0xf0f0_f0f0_0000_0000_u64);
-    pub const LOWER_LEFT: BitGrid8 = BitGrid8(0x0f0f_0f0f_0000_0000_u64);
-}
-*/
 
 
 #[cfg(test)]
