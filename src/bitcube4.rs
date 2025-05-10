@@ -120,6 +120,28 @@ impl BitCube4 {
         vec
     }
 
+    /// Produce all rotations of a BitCube object translated towards origin.
+    /// Prefer a gray code path through all rotations
+    pub fn origin_rotate_all(self) -> ArrayVec::<BitCube4, 24> {
+        let mut vec = ArrayVec::<BitCube4, 24>::new();
+        let mut x = self.shift_to_origin();
+        vec.push(x);
+        for _ in 0..3 {
+            for _ in 0..3 { x = x.rotate_z().shift_to_origin(); vec.push(x); }
+            x = x.rotate_d().shift_to_origin(); vec.push(x);
+        }
+        for _ in 0..3 { x = x.rotate_z().shift_to_origin(); vec.push(x); }
+        x = x.rotate_y().shift_to_origin(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z().shift_to_origin(); vec.push(x); }
+        x = x.rotate_d();  // One wasted move. There is probably a gray code path that is shorter.
+        x = x.rotate_y().shift_to_origin(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z().shift_to_origin(); vec.push(x); }
+        vec.sort_unstable();
+        let symmetries = vec.partition_dedup().0.len();  // Move duplicates to the end.
+        vec.truncate(symmetries);
+        vec
+    }
+
     // 1100
     // 0100
     // 1000
@@ -522,6 +544,17 @@ mod test {
         assert_eq!(BitCube4::rotate_all_vec(cu64::SUBCUBE_0).as_slice(), &[BitCube4(0x0000000000330033), BitCube4(0x0000000000cc00cc), BitCube4(0x0000000033003300), BitCube4(0x00000000cc00cc00), BitCube4(0x0033003300000000), BitCube4(0x00cc00cc00000000), BitCube4(0x3300330000000000), BitCube4(0xcc00cc0000000000)]);
         assert_eq!(BitCube4::rotate_all_vec(cu64::SUBCUBE_0).as_slice(), &[cu64::SUBCUBE_0, cu64::SUBCUBE_1, cu64::SUBCUBE_2, cu64::SUBCUBE_3, cu64::SUBCUBE_4, cu64::SUBCUBE_5, cu64::SUBCUBE_6, cu64::SUBCUBE_7]);
         assert_eq!(BitCube4::rotate_all_vec(BitCube4(0x3)).len(), 24);
+
+    }
+
+    #[test]
+    fn test_origin_rotate_all() {
+        assert_eq!(BitCube4::origin_rotate_all(cu64::CENTER_ALL).as_slice(), &[cu64::CENTER_ALL]);
+        assert_eq!(BitCube4::origin_rotate_all(cu64::CENTER_X).as_slice(), &[BitCube4(0x0000000000ff00ff), BitCube4(0x0000000033333333), BitCube4(0x0033003300330033)]);
+        assert_eq!(BitCube4::origin_rotate_all(cu64::SUBCUBE_0).len(), 1);
+        assert_eq!(BitCube4::origin_rotate_all(cu64::SUBCUBE_0).as_slice(), &[cu64::SUBCUBE_0]);
+        assert_eq!(BitCube4::origin_rotate_all(BitCube4(0x3)).len(), 3);
+        assert_eq!(BitCube4::origin_rotate_all(BitCube4(0x1011f)).len(), 24);
 
     }
 
