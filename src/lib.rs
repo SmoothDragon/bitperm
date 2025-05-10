@@ -19,5 +19,5 @@ pub use crate::bittroc4::*;
 mod bitrhombdo4;
 pub use crate::bitrhombdo4::*;
 
-mod grid8x8;
-pub use crate::grid8x8::*;
+mod bitgrid8;
+pub use crate::bitgrid8::*;

@@ -1,5 +1,9 @@
 use std::fmt;
 
+use arrayvec::*;
+
+use crate::bitlib::swap_mask_shift_u64;
+
 // -----------------------------------------------------------------
 // 2D geometric operations on an 8x8 grid
 // -----------------------------------------------------------------
@@ -14,15 +18,15 @@ use std::fmt;
 
 
 #[derive(PartialEq)]
-pub struct Grid8x8(u64);
+pub struct BitGrid8(u64);
 
-impl fmt::Debug for Grid8x8 {
+impl fmt::Debug for BitGrid8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "Grid8x8({:#010x})", self.0)
+        write!(f, "BitGrid8({:#010x})", self.0)
     } 
 } 
 
-impl fmt::Display for Grid8x8 {
+impl fmt::Display for BitGrid8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", 
             (0..64)
@@ -43,8 +47,106 @@ impl fmt::Display for Grid8x8 {
 
 const REP_01:u64 = 0x0101010101010101u64;
 const REP_7F:u64 = 0x7f7f7f7f7f7f7f7fu64;
+pub const ALL: u64 = 0xffff_ffff_ffff_ffff;
+pub const FULL: BitGrid8 = BitGrid8(0xffff_ffff_ffff_ffff_u64);
+pub const ORDER: BitGrid8 = BitGrid8(0xfedc_ba98_7654_3210_u64);
+pub const UPPER_LEFT: BitGrid8 = BitGrid8(0x0f0f_0f0f_u64);
+pub const UPPER_RIGHT: BitGrid8 = BitGrid8(0xf0f0_f0f0_u64);
+pub const LOWER_LEFT: BitGrid8 = BitGrid8(0x0f0f_0f0f_0000_0000_u64);
+pub const LOWER_RIGHT: BitGrid8 = BitGrid8(0xf0f0_f0f0_0000_0000_u64);
 
-impl Grid8x8 {
+pub const HIGHFIVE: BitGrid8 = BitGrid8(0xff80ff01ff);
+pub const SMALL_FIVE: BitGrid8 = BitGrid8(0x00f080f010f);
+pub const CHECKER2: BitGrid8 = BitGrid8(0x0c0c_0303);
+pub const IDENTITY:BitGrid8 = BitGrid8(0x8040201008040201);
+pub const ANTIDIAG:BitGrid8 = BitGrid8(0x0102040810204080);
+
+
+impl BitGrid8 {
+    /*
+    /// Produce all rotations of a BitGrid
+    /// Prefer a gray code path through all rotations
+    pub fn rotate_all_vec(self) -> ArrayVec::<BitGrid8, 4> {
+        let mut vec = ArrayVec::<BitGrid8, 4>::new();
+        let mut x = self;
+        vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_d(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_d(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_d(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_y(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        x = x.rotate_d();  // One wasted move. There is probably a gray code path that is shorter.
+        x = x.rotate_y(); vec.push(x);
+        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        vec.sort_unstable();
+        let symmetries = vec.partition_dedup().0.len();  // Move duplicates to the end.
+        vec.truncate(symmetries);
+        vec
+    }
+    */
+
+    /// 2x2x2 Example: 01 23 | 45 67 => 20 31 | 64 75 
+    /// The z-rotation is the easiest to understand since the rotation happens in the xy-plane and
+    /// is copied in the other dimension.
+    /// 23 32 31
+    /// 01 10 20
+    pub fn rotate(self) -> Self { 
+        let mut square = self.0;
+        // Swap 4x4 squares left <-> right
+        swap_mask_shift_u64(&mut square, 0x0f0f_0f0f_0f0f_0f0f_u64, 4);
+        // Swap diagonal 4x4 squares
+        swap_mask_shift_u64(&mut square, 0xf0f0_f0f0_0f0f_0f0f_u64, 36);
+        // Swap 2x2 squares left <-> right
+        swap_mask_shift_u64(&mut square, 0x3333_3333_3333_3333_u64, 2);
+        // Swap diagonal 2x2 squares
+        swap_mask_shift_u64(&mut square, 0x0033_0033_0033_0033_u64, 10);
+        // Within 2x2 squares swap left <-> right columns
+        swap_mask_shift_u64(&mut square, 0x5555_5555_5555_5555_u64, 1);
+        // Within 2x2 squares swap diagonal entries
+        swap_mask_shift_u64(&mut square, 0x0055_0055_0055_0055_u64, 9);
+        BitGrid8(square)
+    }
+
+    /// 2x2x2 Example: 01 23 | 45 67 => 20 31 | 64 75 
+    /// The z-rotation is the easiest to understand since the rotation happens in the xy-plane and
+    /// is copied in the other dimension.
+    /// 23 32 31
+    /// 01 10 20
+    pub fn rotate_cc(self) -> Self { 
+        let mut square = self.0;
+        // Swap 4x4 squares top <-> bottom
+        swap_mask_shift_u64(&mut square, 0xffff_ffff_u64, 32);
+        // Swap diagonal 4x4 squares
+        swap_mask_shift_u64(&mut square, 0x0f0f_0f0f_u64, 36);
+        // Swap 2x2 squares top <-> bottom
+        swap_mask_shift_u64(&mut square, 0xffff_0000_ffff_u64, 16);
+        // Swap diagonal 2x2 squares
+        // GOOD TO HERE?
+        swap_mask_shift_u64(&mut square, 0x0000_3333_0000_3333_u64, 18);
+        // Within 2x2 squares swap top <-> bottom rows
+        swap_mask_shift_u64(&mut square, 0x00ff_00ff_00ff_00ff_u64, 8);
+        // Within 2x2 squares swap diagonal entries
+        swap_mask_shift_u64(&mut square, 0x0055_0055_0055_0055_u64, 9);
+        BitGrid8(square)
+    }
+
+    /// Shift a piece in the 8-grid towards the origin so that it touches the x and y axes
+    pub fn shift_to_origin(self) -> Self {
+        let mut shape = self.0;
+        let y_shift = (shape.trailing_zeros() / 8) * 8;
+        shape = shape.unbounded_shr(y_shift);
+        let mut x_shift = shape | shape.unbounded_shr(32);
+        x_shift |= x_shift.unbounded_shr(32);
+        x_shift |= x_shift.unbounded_shr(16);
+        x_shift |= x_shift.unbounded_shr(8);
+        shape = shape.unbounded_shr(x_shift.trailing_zeros());
+        Self(shape)
+    }
+
     pub fn unbounded_shift_n(self) -> Self {
         Self(self.0.unbounded_shr(8))
     }
@@ -99,41 +201,78 @@ impl Grid8x8 {
 
 }
 
+/*
+/// Useful constants for 8-grid transformations
+pub mod bg8 {
+    pub const ALL: u64 = 0xffff_ffff_ffff_ffff;
+    pub const FULL: BitGrid8 = BitGrid8(0xffff_ffff_ffff_ffff_u64);
+    pub const ORDER: BitGrid8 = BitGrid8(0xfedc_ba98_7654_3210_u64);
+    pub const UPPER_RIGHT: BitGrid8 = BitGrid8(0xf0f0_f0f0_u64);
+    pub const LOWER_RIGHT: BitGrid8 = BitGrid8(0xf0f0_f0f0_0000_0000_u64);
+    pub const LOWER_LEFT: BitGrid8 = BitGrid8(0x0f0f_0f0f_0000_0000_u64);
+}
+*/
+
+
 #[cfg(test)]
 mod test {
     use super::*;
     
-    const IDENTITY:Grid8x8 = Grid8x8(0x8040201008040201);
 
     #[test]
     fn test_rank() {
         assert_eq!(IDENTITY.rank(), 8);
-        assert_eq!(Grid8x8(0xfedcba9876543210u64).rank(), 4);
+        assert_eq!(BitGrid8(0xfedcba9876543210u64).rank(), 4);
     }
 
     #[test]
-    fn test_grid8x8_display() {
-        assert_eq!(format!("{}", Grid8x8(0x8040201008040201)), 
+    fn test_bitgrid8_display() {
+        assert_eq!(format!("{}", BitGrid8(0x8040201008040201)), 
             "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
-        assert_eq!(format!("{}", Grid8x8(0x1)), 
+        assert_eq!(format!("{}", BitGrid8(0x1)), 
             "#.......\n........\n........\n........\n........\n........\n........\n........\n");
     }
 
     #[test]
+    fn test_shift_to_origin() {
+        assert_eq!(FULL.shift_to_origin(), FULL);
+        assert_eq!(UPPER_RIGHT.shift_to_origin(), UPPER_LEFT);
+        // assert_eq!((cu64::CENTER_X | cu64::CENTER_Y).shift_to_origin(), BitCube4(0x0000_0000_6ff6_6ff6));
+    }
+
+    #[test]
+    fn test_rotate() {
+        // println!("{}\n{}", HIGHFIVE, HIGHFIVE.rotate());
+        // println!("{}\n{}", HIGHFIVE, HIGHFIVE.rotate_cc());
+        // println!("{}\n{}", SMALL_FIVE, SMALL_FIVE.rotate_cc());
+        // println!("{}\n{}", CHECKER2, CHECKER2.rotate_cc());
+        // assert_eq!(ANTIDIAG, IDENTITY.rotate());
+        assert_eq!(ANTIDIAG, IDENTITY.rotate_cc());
+        assert_eq!(FULL.rotate_cc(), FULL);
+        assert_eq!(UPPER_LEFT.rotate_cc(), LOWER_LEFT);
+        // assert_eq!(UPPER_LEFT, FULL);
+        // assert_eq!(cu64::CENTER_X.rotate(), cu64::CENTER_X);
+        // assert_eq!(cu64::CENTER_Y.rotate(), cu64::CENTER_Z);
+        // assert_eq!(cu64::CENTER_Z.rotate(), cu64::CENTER_Y);
+        // assert_eq!(BitCube4(0xf).rotate(), BitCube4(0xf000));
+        // assert_eq!(BitCube4(0xf000).rotate(), BitCube4(0xf000000000000000));
+    }
+
+    #[test]
     fn test_unbounded_shift_n() {
-        assert_eq!(Grid8x8(0xf00f).unbounded_shift_n(), Grid8x8(0xf0));
-        assert_eq!(Grid8x8(0xf00f00).unbounded_shift_n(), Grid8x8(0xf00f));
+        assert_eq!(BitGrid8(0xf00f).unbounded_shift_n(), BitGrid8(0xf0));
+        assert_eq!(BitGrid8(0xf00f00).unbounded_shift_n(), BitGrid8(0xf00f));
     }
 
     fn test_checked_shift_n() {
-        assert_eq!(Grid8x8(0xf00f).checked_shift_n(), None);
-        assert_eq!(Grid8x8(0xf00f00).checked_shift_n(), Some(Grid8x8(0xf00f)));
+        assert_eq!(BitGrid8(0xf00f).checked_shift_n(), None);
+        assert_eq!(BitGrid8(0xf00f00).checked_shift_n(), Some(BitGrid8(0xf00f)));
     }
 
     // #[test]
     // fn test_shift_w() {
-        // assert_eq!(Grid8x8(0xf00f).shift_w(), None);
-        // assert_eq!(Grid8x8(0xf00f00).shift_w(), Some(Grid8x8(0xf00f)));
+        // assert_eq!(BitGrid8(0xf00f).shift_w(), None);
+        // assert_eq!(BitGrid8(0xf00f00).shift_w(), Some(BitGrid8(0xf00f)));
     // }
 }
 /*
