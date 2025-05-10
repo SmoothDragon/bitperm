@@ -1,5 +1,6 @@
 use std::fmt;
 
+use derive_more::*;
 use arrayvec::*;
 
 use crate::bitlib::swap_mask_shift_u64;
@@ -17,8 +18,10 @@ use crate::bitlib::swap_mask_shift_u64;
 // Rotations will happen from the center of the square.
 
 
-#[derive(PartialEq)]
-pub struct BitGrid8(u64);
+#[derive(Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord,
+    BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, 
+    )]
+pub struct BitGrid8(pub u64);
 
 impl fmt::Debug for BitGrid8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -48,6 +51,7 @@ impl fmt::Display for BitGrid8 {
 const REP_01:u64 = 0x0101010101010101u64;
 const REP_7F:u64 = 0x7f7f7f7f7f7f7f7fu64;
 pub const ALL: u64 = 0xffff_ffff_ffff_ffff;
+pub const CENTER_XY: BitGrid8 = BitGrid8(0x1818_18ff_ff18_1818);
 pub const FULL: BitGrid8 = BitGrid8(0xffff_ffff_ffff_ffff_u64);
 pub const ORDER: BitGrid8 = BitGrid8(0xfedc_ba98_7654_3210_u64);
 pub const UPPER_LEFT: BitGrid8 = BitGrid8(0x0f0f_0f0f_u64);
@@ -63,31 +67,31 @@ pub const ANTIDIAG:BitGrid8 = BitGrid8(0x0102040810204080);
 
 
 impl BitGrid8 {
-    /*
+    /// Produce all rotations of a BitGrid object translated towards origin.
+    /// Prefer a gray code path through all rotations
+    pub fn origin_rotate_all(self) -> ArrayVec::<BitGrid8, 4> {
+        let mut vec = ArrayVec::<BitGrid8, 4>::new();
+        let mut x = self.shift_to_origin();
+        vec.push(x);
+        for _ in 0..3 { x = x.rotate_cc().shift_to_origin(); vec.push(x); }
+        vec.sort_unstable();
+        let symmetries = vec.partition_dedup().0.len();  // Move duplicates to the end.
+        vec.truncate(symmetries);
+        vec
+    }
+
     /// Produce all rotations of a BitGrid
     /// Prefer a gray code path through all rotations
     pub fn rotate_all_vec(self) -> ArrayVec::<BitGrid8, 4> {
         let mut vec = ArrayVec::<BitGrid8, 4>::new();
         let mut x = self;
         vec.push(x);
-        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
-        x = x.rotate_d(); vec.push(x);
-        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
-        x = x.rotate_d(); vec.push(x);
-        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
-        x = x.rotate_d(); vec.push(x);
-        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
-        x = x.rotate_y(); vec.push(x);
-        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
-        x = x.rotate_d();  // One wasted move. There is probably a gray code path that is shorter.
-        x = x.rotate_y(); vec.push(x);
-        for _ in 0..3 { x = x.rotate_z(); vec.push(x); }
+        for _ in 0..3 { x = x.rotate_cc(); vec.push(x); }
         vec.sort_unstable();
         let symmetries = vec.partition_dedup().0.len();  // Move duplicates to the end.
         vec.truncate(symmetries);
         vec
     }
-    */
 
     /// 2x2x2 Example: 01 23 | 45 67 => 20 31 | 64 75 
     /// The z-rotation is the easiest to understand since the rotation happens in the xy-plane and
@@ -237,25 +241,38 @@ mod test {
     fn test_shift_to_origin() {
         assert_eq!(FULL.shift_to_origin(), FULL);
         assert_eq!(UPPER_RIGHT.shift_to_origin(), UPPER_LEFT);
-        // assert_eq!((cu64::CENTER_X | cu64::CENTER_Y).shift_to_origin(), BitCube4(0x0000_0000_6ff6_6ff6));
+        assert_eq!(ANTIDIAG.shift_to_origin(), ANTIDIAG);
+        assert_eq!(CENTER_XY.shift_to_origin(), CENTER_XY);
     }
 
     #[test]
-    fn test_rotate() {
-        // println!("{}\n{}", HIGHFIVE, HIGHFIVE.rotate());
-        // println!("{}\n{}", HIGHFIVE, HIGHFIVE.rotate_cc());
-        // println!("{}\n{}", SMALL_FIVE, SMALL_FIVE.rotate_cc());
-        // println!("{}\n{}", CHECKER2, CHECKER2.rotate_cc());
-        // assert_eq!(ANTIDIAG, IDENTITY.rotate());
+    fn test_rotate_cc() {
+        assert_eq!(HIGHFIVE.rotate_cc(), BitGrid8(0x171515151515151d));
+        assert_eq!(SMALL_FIVE.rotate_cc(), BitGrid8(0x1715151d00000000));
         assert_eq!(ANTIDIAG, IDENTITY.rotate_cc());
         assert_eq!(FULL.rotate_cc(), FULL);
         assert_eq!(UPPER_LEFT.rotate_cc(), LOWER_LEFT);
-        // assert_eq!(UPPER_LEFT, FULL);
-        // assert_eq!(cu64::CENTER_X.rotate(), cu64::CENTER_X);
-        // assert_eq!(cu64::CENTER_Y.rotate(), cu64::CENTER_Z);
-        // assert_eq!(cu64::CENTER_Z.rotate(), cu64::CENTER_Y);
-        // assert_eq!(BitCube4(0xf).rotate(), BitCube4(0xf000));
-        // assert_eq!(BitCube4(0xf000).rotate(), BitCube4(0xf000000000000000));
+        // println!("{}\n{}", HIGHFIVE, HIGHFIVE.rotate());
+        // println!("{}\n{}", SMALL_FIVE, SMALL_FIVE.rotate_cc());
+        // println!("{}\n{}", CHECKER2, CHECKER2.rotate_cc());
+        // assert_eq!(ANTIDIAG, IDENTITY.rotate());
+    }
+
+    #[test]
+    fn test_rotate_all_vec() {
+        assert_eq!(BitGrid8::rotate_all_vec(CENTER_XY).as_slice(), &[CENTER_XY]);
+        assert_eq!(BitGrid8::rotate_all_vec(UPPER_LEFT).as_slice(), &[UPPER_LEFT, UPPER_RIGHT, LOWER_LEFT, LOWER_RIGHT]);
+        assert_eq!(BitGrid8::rotate_all_vec(IDENTITY).len(), 2);
+        assert_eq!(BitGrid8::rotate_all_vec(CHECKER2).len(), 4);
+    }
+
+    #[test]
+    fn test_origin_rotate_all() {
+        assert_eq!(BitGrid8::origin_rotate_all(CENTER_XY).as_slice(), &[CENTER_XY]);
+        assert_eq!(BitGrid8::origin_rotate_all(UPPER_LEFT).len(), 1);
+        assert_eq!(BitGrid8::origin_rotate_all(HIGHFIVE).len(), 2);
+        assert_eq!(BitGrid8::origin_rotate_all(CHECKER2).len(), 2);
+        assert_eq!(BitGrid8::origin_rotate_all(BitGrid8(0x103)).len(), 4);
     }
 
     #[test]
