@@ -200,6 +200,21 @@ impl BitGrid8 {
         Self(shape)
     }
 
+    /// Find the (x,y) bounding box of a piece shifted to origin
+    pub fn origin_bounding_box(self) -> (u32, u32) {
+        let mut shape = self.0;
+        // Collect ones on x and y axes
+        shape |= (shape.unbounded_shr(1) & 0x7f7f7f7f7f7f7f7f) | shape.unbounded_shr(8);
+        shape |= (shape.unbounded_shr(2) & 0x3f3f3f3f3f3f3f3f) | shape.unbounded_shr(16);
+        shape |= (shape.unbounded_shr(4) & 0x0f0f0f0f0f0f0f0f) | shape.unbounded_shr(32);
+        shape &= 0x01010101010101ff;  // Creates L on x and y axes
+        let x = shape & 0xff;
+        let len_x = x.count_ones();
+        let y = shape & 0x0101010101010101;
+        let len_y = (x * y).count_ones() / len_x;
+        (len_x as u32, len_y as u32)
+    }
+
     pub fn unbounded_shift_n(self) -> Self {
         Self(self.0.unbounded_shr(8))
     }
@@ -280,6 +295,25 @@ mod test {
         assert_eq!(UPPER_RIGHT.shift_to_origin(), UPPER_LEFT);
         assert_eq!(ANTIDIAG.shift_to_origin(), ANTIDIAG);
         assert_eq!(CENTER_XY.shift_to_origin(), CENTER_XY);
+    }
+
+    #[test]
+    fn test_origin_bounding_box() {
+        assert_eq!(FULL.origin_bounding_box(), (8,8));
+        assert_eq!(UPPER_LEFT.origin_bounding_box(), (4,4));
+        assert_eq!(ANTIDIAG.origin_bounding_box(), (8,8));
+        assert_eq!(HIGHFIVE.origin_bounding_box(), (8,5));
+        assert_eq!(SMALL_FIVE.origin_bounding_box(), (4,5));
+    }
+
+    #[test]
+    fn test_origin_bounding_box_pentomino() {
+        let pentomino = BitGrid8::pentomino_map();
+        assert_eq!((&pentomino[&'F']).origin_bounding_box(), (3,3));
+        assert_eq!((&pentomino[&'I']).origin_bounding_box(), (1,5));
+        assert_eq!((&pentomino[&'L']).origin_bounding_box(), (2,4));
+        assert_eq!((&pentomino[&'P']).origin_bounding_box(), (2,3));
+        assert_eq!((&pentomino[&'W']).origin_bounding_box(), (3,3));
     }
 
     #[test]
