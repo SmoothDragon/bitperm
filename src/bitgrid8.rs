@@ -215,6 +215,18 @@ impl BitGrid8 {
         (len_x as u32, len_y as u32)
     }
 
+    /// Find the (x,y) shifts piece shifted to origin
+    pub fn origin_bounded_shifts(self) -> Vec<Self> {
+        let mut shapes = Vec::<Self>::new();
+        let (x,y) = self.origin_bounding_box();
+        for xx in 0..(9-x) {
+            for yy in 0..(9-y) {
+                shapes.push(Self(self.0.unbounded_shl(x + 8*y)));
+            }
+        }
+        shapes
+    }
+
     pub fn unbounded_shift_n(self) -> Self {
         Self(self.0.unbounded_shr(8))
     }
@@ -314,6 +326,15 @@ mod test {
         assert_eq!((&pentomino[&'L']).origin_bounding_box(), (2,4));
         assert_eq!((&pentomino[&'P']).origin_bounding_box(), (2,3));
         assert_eq!((&pentomino[&'W']).origin_bounding_box(), (3,3));
+    }
+
+    #[test]
+    fn test_origin_bounded_shift() {
+        assert_eq!(FULL.origin_bounded_shifts().len(), 1);
+        assert_eq!(UPPER_LEFT.origin_bounded_shifts().len(), 25);
+        assert_eq!(ANTIDIAG.origin_bounded_shifts().len(), 1);
+        assert_eq!(HIGHFIVE.origin_bounded_shifts().len(), 4);
+        assert_eq!(SMALL_FIVE.origin_bounded_shifts().len(), 20);
     }
 
     #[test]
