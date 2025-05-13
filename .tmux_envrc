@@ -1,0 +1,5 @@
+#!/bin/bash
+
+export PATH=`pwd -P`/bin:$PATH
+
+tmux rename-session bitperm
