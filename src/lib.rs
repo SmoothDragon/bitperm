@@ -21,3 +21,6 @@ pub use crate::bitrhombdo4::*;
 
 mod bitgrid8;
 pub use crate::bitgrid8::*;
+
+mod origin_bitgrid8;
+pub use crate::origin_bitgrid8::*;

@@ -86,10 +86,10 @@ pub const IDENTITY:BitGrid8 = BitGrid8(0x8040201008040201);
 pub const ANTIDIAG:BitGrid8 = BitGrid8(0x0102040810204080);
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
-pub struct OriginBitGrid8(BitGrid8);
+pub struct OriginBitGrid8Old(BitGrid8);
 
-impl OriginBitGrid8 {
-    pub fn parse(grid: BitGrid8) -> Result<OriginBitGrid8, String> {
+impl OriginBitGrid8Old {
+    pub fn parse(grid: BitGrid8) -> Result<OriginBitGrid8Old, String> {
         if *grid & 0xff == 0 { return Err("First row is all zeros.".to_string()); }
         if *grid & REP_01 == 0 { return Err("First column is all zeros.".to_string()); }
         Ok(Self(grid))
@@ -110,17 +110,17 @@ impl OriginBitGrid8 {
     }
 }
 
-impl std::convert::TryFrom<BitGrid8> for OriginBitGrid8 {
+impl std::convert::TryFrom<BitGrid8> for OriginBitGrid8Old {
     type Error = String;
 
-    fn try_from(grid: BitGrid8) -> Result<OriginBitGrid8, Self::Error> {
+    fn try_from(grid: BitGrid8) -> Result<OriginBitGrid8Old, Self::Error> {
         if *grid & 0xff == 0 { return Err("First row is all zeros.".to_string()); }
         if *grid & REP_01 == 0 { return Err("First column is all zeros.".to_string()); }
         Ok(Self(grid))
     }
 }
 
-impl core::ops::Deref for OriginBitGrid8 {
+impl core::ops::Deref for OriginBitGrid8Old {
     type Target = BitGrid8;
 
     fn deref(&self) -> &Self::Target {
@@ -198,6 +198,7 @@ impl BitGrid8 {
         vec
     }
 
+    /*
     /// 2x2x2 Example: 01 23 | 45 67 => 20 31 | 64 75 
     /// The z-rotation is the easiest to understand since the rotation happens in the xy-plane and
     /// is copied in the other dimension.
@@ -220,6 +221,7 @@ impl BitGrid8 {
         swap_mask_shift_u64(&mut square, 0x0055_0055_0055_0055_u64, 9);
         BitGrid8(square)
     }
+    */
 
     /// 2x2x2 Example: 01 23 | 45 67 => 20 31 | 64 75 
     /// The z-rotation is the easiest to understand since the rotation happens in the xy-plane and
@@ -284,6 +286,7 @@ impl BitGrid8 {
         (len_x as u32, len_y as u32)
     }
 
+    /* TODO: should the shifts be by xx,yy instead of x,y?
     /// Find the (x,y) shifts piece shifted to origin
     pub fn origin_bounded_shifts(self) -> Vec<Self> {
         let mut shapes = Vec::<Self>::new();
@@ -295,6 +298,7 @@ impl BitGrid8 {
         }
         shapes
     }
+    */
 
     pub fn unbounded_shift_n(self) -> Self {
         Self(self.0.unbounded_shr(8))
@@ -397,14 +401,15 @@ mod test {
         assert_eq!((&pentomino[&'W']).origin_bounding_box(), (3,3));
     }
 
-    #[test]
-    fn test_origin_bounded_shift() {
-        assert_eq!(FULL.origin_bounded_shifts().len(), 1);
-        assert_eq!(UPPER_LEFT.origin_bounded_shifts().len(), 25);
-        assert_eq!(ANTIDIAG.origin_bounded_shifts().len(), 1);
-        assert_eq!(HIGHFIVE.origin_bounded_shifts().len(), 4);
-        assert_eq!(SMALL_FIVE.origin_bounded_shifts().len(), 20);
-    }
+    
+    // #[test]
+    // fn test_origin_bounded_shift() {
+        // assert_eq!(FULL.origin_bounded_shifts().len(), 1);
+        // assert_eq!(UPPER_LEFT.origin_bounded_shifts().len(), 25);
+        // assert_eq!(ANTIDIAG.origin_bounded_shifts().len(), 1);
+        // assert_eq!(HIGHFIVE.origin_bounded_shifts().len(), 4);
+        // assert_eq!(SMALL_FIVE.origin_bounded_shifts().len(), 20);
+    // }
 
     #[test]
     fn test_rotate_cc() {

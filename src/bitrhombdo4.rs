@@ -1,9 +1,9 @@
 use std::fmt;
 use std::ops::*;
-use flowscad::*;
+// use flowscad::*;
 
-use crate::bitlib::swap_mask_shift_u64;
-use crate::bitcube3::BitCube3;
+// use crate::bitlib::swap_mask_shift_u64;
+// use crate::bitcube3::BitCube3;
 use crate::bitcube4::BitCube4;
 
 
