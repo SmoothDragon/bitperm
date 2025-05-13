@@ -1,6 +1,7 @@
 use std::fmt;
 use std::collections::HashMap;
 
+
 use derive_more::*;
 use arrayvec::*;
 
@@ -23,6 +24,24 @@ use crate::bitlib::swap_mask_shift_u64;
     BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, 
     )]
 pub struct BitGrid8(pub u64);
+
+/// Let BitGrid8 use >> operator in the safe manner of unbounded_shr()
+impl core::ops::Shr<u32> for BitGrid8 {
+    type Output = Self;
+
+    fn shr(self, shift: u32) -> Self {
+        Self(self.unbounded_shr(shift))
+    }
+}
+
+/// Let BitGrid8 use << operator in the safe manner of unbounded_shl()
+impl core::ops::Shl<u32> for BitGrid8 {
+    type Output = Self;
+
+    fn shl(self, shift: u32) -> Self {
+        Self(self.unbounded_shl(shift))
+    }
+}
 
 impl fmt::Debug for BitGrid8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
@@ -66,6 +85,56 @@ pub const CHECKER2: BitGrid8 = BitGrid8(0x0c0c_0303);
 pub const IDENTITY:BitGrid8 = BitGrid8(0x8040201008040201);
 pub const ANTIDIAG:BitGrid8 = BitGrid8(0x0102040810204080);
 
+#[derive(Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
+pub struct OriginBitGrid8(BitGrid8);
+
+impl OriginBitGrid8 {
+    pub fn parse(grid: BitGrid8) -> Result<OriginBitGrid8, String> {
+        if *grid & 0xff == 0 { return Err("First row is all zeros.".to_string()); }
+        if *grid & REP_01 == 0 { return Err("First column is all zeros.".to_string()); }
+        Ok(Self(grid))
+    }
+
+    /// Shift a piece in the 8-grid towards the origin so that it touches the x and y axes
+    pub fn shift_to_origin(grid: BitGrid8) -> Self {
+        let mut shape = grid;
+        // y-shift the zero rows away
+        shape = shape >> ((shape.trailing_zeros() / 8) * 8);
+        // x-shift the zero rows away
+        let mut x_shift = shape >> 32;
+        x_shift |= x_shift >> 32;
+        x_shift |= x_shift >> 16;
+        x_shift |= x_shift >> 8;
+        shape = shape >> x_shift.trailing_zeros();
+        Self(shape)
+    }
+}
+
+impl std::convert::TryFrom<BitGrid8> for OriginBitGrid8 {
+    type Error = String;
+
+    fn try_from(grid: BitGrid8) -> Result<OriginBitGrid8, Self::Error> {
+        if *grid & 0xff == 0 { return Err("First row is all zeros.".to_string()); }
+        if *grid & REP_01 == 0 { return Err("First column is all zeros.".to_string()); }
+        Ok(Self(grid))
+    }
+}
+
+impl core::ops::Deref for OriginBitGrid8 {
+    type Target = BitGrid8;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl core::ops::Deref for BitGrid8 {
+    type Target = u64;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 impl BitGrid8 {
     /// Pentominoes indexed by wikipedia naming convention.
