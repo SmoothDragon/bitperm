@@ -14,6 +14,7 @@ flowscad = "0.1.2"
 # criterion = "0.5.1"
 # iterator = "0.1.0"
 nonzero = "0.2.0"
+thiserror = "2.0.12"
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }

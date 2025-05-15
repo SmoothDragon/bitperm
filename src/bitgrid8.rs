@@ -18,6 +18,9 @@ use crate::bitlib::swap_mask_shift_u64;
 // The low bit corresponds to the upper left most position.
 // The high bit corresponds to the lower right most position.
 // Rotations will happen from the center of the square.
+//
+// The operators >> and << implement unbounded_shr() and unbounded_shl(),
+// so they may be used safely.
 
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord,
@@ -40,6 +43,24 @@ impl core::ops::Shl<u32> for BitGrid8 {
 
     fn shl(self, shift: u32) -> Self {
         Self(self.unbounded_shl(shift))
+    }
+}
+
+/// Define BitAnd with u64 for BitGrid8
+impl core::ops::BitAnd<u64> for BitGrid8 {
+    type Output = Self;
+
+    fn bitand(self, rhs: u64) -> Self {
+        Self(self.0 & rhs)
+    }
+}
+
+/// Define BitOr with u64 for BitGrid8
+impl core::ops::BitOr<u64> for BitGrid8 {
+    type Output = Self;
+
+    fn bitor(self, rhs: u64) -> Self {
+        Self(self.0 | rhs)
     }
 }
 

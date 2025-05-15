@@ -3,15 +3,15 @@ use std::fmt;
 
 
 use derive_more::*;
+use thiserror::*;
 // use arrayvec::*;
 
 // use crate::bitlib::swap_mask_shift_u64;
 use crate::bitgrid8::*;
 
 // -----------------------------------------------------------------
-// 2D geometric pieces and operations on an 8x8 grid
-//
-// "origin" pieces are shifted as close to origin as possible.
+// 2D geometric pieces shifted to the origin an 8x8 grid
+// Bounding box information is included for other useful functions
 // -----------------------------------------------------------------
 
 // -----------------------------------------------------------------
@@ -23,32 +23,23 @@ use crate::bitgrid8::*;
 // Rotations will happen from the center of the square.
 
 
+#[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub struct PieceBitGrid8{
+    bitgrid: BitGrid8,  // This acts like a u64
+    xy: (u8, u8),  // xy dimensions of bounding box
+}
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord,)]
-pub struct OriginBitGrid8(BitGrid8);  // This is a u64 under the hood
+#[derive(Error, Debug, Clone, PartialEq)]
+#[error("{0} is not origin shifted.")]
+pub struct PieceGrid8Error(u64, String);
 
-impl fmt::Debug for OriginBitGrid8 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "OriginBitGrid8({:#010x})", *self.0)
-    } 
-} 
-
-impl fmt::Display for OriginBitGrid8 {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", 
-            (0..64)
-            .map(|x| format!("{}{}", if (*self.0 >> x) & 0x1 == 1 { "#" } else { "." },
-                if x%8 ==7 { "\n" } else { "" }))
-            .collect::<String>()
-            )
-    } 
-} 
-
-impl OriginBitGrid8 {
-    pub fn parse(grid: BitGrid8) -> Result<OriginBitGrid8, String> {
-        if *grid & 0xff == 0 { return Err("First row is all zeros.".to_string()); }
-        if *grid & 0x0101010101010101 == 0 { return Err("First column is all zeros.".to_string()); }
-        Ok(Self(grid))
+impl PieceBitGrid8 {
+    pub fn new(raw_u64: u64) -> Result<Self, PieceGrid8Error> {
+        if raw_u64 == 0 { return Ok(Self{ bitgrid: BitGrid8(raw_u64), xy: (0, 0) }) }
+        if raw_u64 & 0xff == 0 { return Err(PieceGrid8Error(raw_u64, "First row is all zeros.".to_string())); }
+        if raw_u64 & 0x0101010101010101 == 0 { return Err(PieceGrid8Error(raw_u64, "First column is all zeros.".to_string())); }
+        let grid = BitGrid8(raw_u64);
+        Ok(Self{ bitgrid: grid, xy: Self::bounding_box(grid) })
     }
 
     /// Shift a piece in the 8-grid towards the origin so that it touches the x and y axes
@@ -62,26 +53,38 @@ impl OriginBitGrid8 {
         x_shift |= x_shift >> 16;
         x_shift |= x_shift >> 8;
         shape = shape >> x_shift.trailing_zeros();
-        Self(shape)
+        Self{ bitgrid: shape, xy: Self::bounding_box(shape) }
+    }
+
+    /// Find the (x,y) bounding box of a piece shifted to origin
+    fn bounding_box(grid: BitGrid8) -> (u8, u8) {
+        let mut shape = grid;
+        // Collect ones on x and y axes
+        shape |= ((shape >> 1) & 0x7f7f7f7f7f7f7f7f) | shape >> 8;
+        shape |= ((shape >> 2) & 0x3f3f3f3f3f3f3f3f) | shape >> 16;
+        shape |= ((shape >> 4) & 0x0f0f0f0f0f0f0f0f) | shape >> 32;
+        let len_x = (shape & 0xff).count_ones();
+        let len_y = (shape & 0x0101010101010101).count_ones();
+        (len_x as u8, len_y as u8)
     }
 
     /*
     /// Pentominoes indexed by wikipedia naming convention.
     /// Diagonal presentations are rotated 45 degrees clockwise.
-    pub fn pentomino_map() -> HashMap::<char, OriginBitGrid8> {
-        HashMap::<char, OriginBitGrid8>::from([
-            ('F', OriginBitGrid8(0x20306)),
-            ('I', OriginBitGrid8(0x101010101)),
-            ('L', OriginBitGrid8(0x3010101)),
-            ('N', OriginBitGrid8(0xe03)),
-            ('P', OriginBitGrid8(0x10303)),
-            ('T', OriginBitGrid8(0x20207)),
-            ('U', OriginBitGrid8(0x705)),
-            ('V', OriginBitGrid8(0x70101)),
-            ('W', OriginBitGrid8(0x60301)),
-            ('X', OriginBitGrid8(0x20702)),
-            ('Y', OriginBitGrid8(0xf04)),
-            ('Z', OriginBitGrid8(0x60203)),
+    pub fn pentomino_map() -> HashMap::<char, PieceBitGrid8> {
+        HashMap::<char, PieceBitGrid8>::from([
+            ('F', PieceBitGrid8(0x20306)),
+            ('I', PieceBitGrid8(0x101010101)),
+            ('L', PieceBitGrid8(0x3010101)),
+            ('N', PieceBitGrid8(0xe03)),
+            ('P', PieceBitGrid8(0x10303)),
+            ('T', PieceBitGrid8(0x20207)),
+            ('U', PieceBitGrid8(0x705)),
+            ('V', PieceBitGrid8(0x70101)),
+            ('W', PieceBitGrid8(0x60301)),
+            ('X', PieceBitGrid8(0x20702)),
+            ('Y', PieceBitGrid8(0xf04)),
+            ('Z', PieceBitGrid8(0x60203)),
         ])
     }
 
@@ -116,22 +119,37 @@ impl OriginBitGrid8 {
     */
 }
 
+impl fmt::Debug for PieceBitGrid8 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "PieceBitGrid8({:#010x})", *self.bitgrid)
+    } 
+} 
 
-impl std::convert::TryFrom<BitGrid8> for OriginBitGrid8 {
-    type Error = String;
+impl fmt::Display for PieceBitGrid8 {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", 
+            (0..64)
+            .map(|x| format!("{}{}", if (*self.bitgrid >> x) & 0x1 == 1 { "#" } else { "." },
+                if x%8 ==7 { "\n" } else { "" }))
+            .collect::<String>()
+            )
+    } 
+} 
 
-    fn try_from(grid: BitGrid8) -> Result<OriginBitGrid8, Self::Error> {
-        if *grid & 0xff == 0 { return Err("First row is all zeros.".to_string()); }
-        if *grid & 0x0101010101010101 == 0 { return Err("First column is all zeros.".to_string()); }
-        Ok(Self(grid))
+
+impl std::convert::TryFrom<BitGrid8> for PieceBitGrid8 {
+    type Error = PieceGrid8Error;
+
+    fn try_from(grid: BitGrid8) -> Result<PieceBitGrid8, Self::Error> {
+        Self::new(*grid)
     }
 }
 
-impl core::ops::Deref for OriginBitGrid8 {
+impl core::ops::Deref for PieceBitGrid8 {
     type Target = BitGrid8;
 
     fn deref(&self) -> &Self::Target {
-        &self.0
+        &self.bitgrid
     }
 }
 
@@ -142,17 +160,18 @@ mod test {
     use super::*;
     
 
-    // #[test]
-    // fn test_rank() {
-        // assert_eq!(IDENTITY.rank(), 8);
-        // assert_eq!(BitGrid8(0xfedcba9876543210u64).rank(), 4);
-    // }
+    #[test]
+    fn test_size_of_piece_grid8() {
+        use std::mem;
+        assert_eq!(mem::size_of::<PieceBitGrid8>(), 16);  // Could be 10
+        assert_eq!(mem::size_of::<Option<PieceBitGrid8>>(), 24); // Could be 10
+    }
 
     #[test]
-    fn test_origin_bitgrid8_display() {
-        assert_eq!(format!("{}", OriginBitGrid8::try_from(BitGrid8(0x8040201008040201)).unwrap()), 
+    fn test_piece_bitgrid8_display() {
+        assert_eq!(format!("{}", PieceBitGrid8::try_from(BitGrid8(0x8040201008040201)).unwrap()), 
             "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
-        // assert_eq!(format!("{}", OriginBitGrid8(0x1)), 
+        // assert_eq!(format!("{}", PieceBitGrid8(0x1)), 
             // "#.......\n........\n........\n........\n........\n........\n........\n........\n");
     }
 
