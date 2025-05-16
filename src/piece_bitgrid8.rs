@@ -34,26 +34,9 @@ pub struct PieceBitGrid8{
 pub struct PieceGrid8Error(u64, String);
 
 impl PieceBitGrid8 {
-    pub fn new(raw_u64: u64) -> Result<Self, PieceGrid8Error> {
-        if raw_u64 == 0 { return Ok(Self{ bitgrid: BitGrid8(raw_u64), xy: (0, 0) }) }
-        if raw_u64 & 0xff == 0 { return Err(PieceGrid8Error(raw_u64, "First row is all zeros.".to_string())); }
-        if raw_u64 & 0x0101010101010101 == 0 { return Err(PieceGrid8Error(raw_u64, "First column is all zeros.".to_string())); }
-        let grid = BitGrid8(raw_u64);
-        Ok(Self{ bitgrid: grid, xy: Self::bounding_box(grid) })
-    }
-
-    /// Shift a piece in the 8-grid towards the origin so that it touches the x and y axes
-    pub fn shift_to_origin(grid: BitGrid8) -> Self {
-        let mut shape = grid;
-        // y-shift the zero rows away
-        shape = shape >> ((shape.trailing_zeros() / 8) * 8);
-        // x-shift the zero rows away
-        let mut x_shift = shape >> 32;
-        x_shift |= x_shift >> 32;
-        x_shift |= x_shift >> 16;
-        x_shift |= x_shift >> 8;
-        shape = shape >> x_shift.trailing_zeros();
-        Self{ bitgrid: shape, xy: Self::bounding_box(shape) }
+    pub fn new(raw_u64: u64) -> Self {
+        let grid = BitGrid8(raw_u64).shift_to_origin();
+        Self{ bitgrid: grid, xy: Self::bounding_box(grid) }
     }
 
     /// Find the (x,y) bounding box of a piece shifted to origin
@@ -127,23 +110,24 @@ impl fmt::Debug for PieceBitGrid8 {
 
 impl fmt::Display for PieceBitGrid8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", 
-            (0..64)
-            .map(|x| format!("{}{}", if (*self.bitgrid >> x) & 0x1 == 1 { "#" } else { "." },
-                if x%8 ==7 { "\n" } else { "" }))
+        write!(f, "{}",     
+            (0..self.xy.0).flat_map(move |x| (0..self.xy.1).map(move |y| (x, y)))
+            // (0..64)
+            .map(|(x,y)| format!("{}{}", if (*self.bitgrid >> (x+8*y)) & 0x1 == 1 { "#" } else { "." },
+                if y == (self.xy.1 - 1) { "\n" } else { "" }))
             .collect::<String>()
             )
     } 
 } 
 
 
-impl std::convert::TryFrom<BitGrid8> for PieceBitGrid8 {
-    type Error = PieceGrid8Error;
+// impl std::convert::TryFrom<BitGrid8> for PieceBitGrid8 {
+    // type Error = PieceGrid8Error;
 
-    fn try_from(grid: BitGrid8) -> Result<PieceBitGrid8, Self::Error> {
-        Self::new(*grid)
-    }
-}
+    // fn try_from(grid: BitGrid8) -> Result<PieceBitGrid8, Self::Error> {
+        // Self::new(*grid)
+    // }
+// }
 
 impl core::ops::Deref for PieceBitGrid8 {
     type Target = BitGrid8;
@@ -168,8 +152,28 @@ mod test {
     }
 
     #[test]
+    fn test_new() {
+        assert_eq!(PieceBitGrid8::new(0x8040201008040201).bitgrid, BitGrid8(0x8040201008040201));
+        assert_eq!(PieceBitGrid8::new(0x8040201008040201).xy, (8, 8));
+    }
+
+    #[test]
+    fn test_new_pentomino() {
+        let pentomino = BitGrid8::pentomino_map();
+        assert_eq!(PieceBitGrid8::new(*pentomino[&'F']).bitgrid, BitGrid8(0x20306));
+        assert_eq!(PieceBitGrid8::new(*(pentomino[&'F'] << 20)).bitgrid, BitGrid8(0x20306));
+        assert_eq!(PieceBitGrid8::new(*pentomino[&'F']).xy, (3, 3));
+        assert_eq!(PieceBitGrid8::new(*pentomino[&'I']).xy, (1, 5));
+        assert_eq!(PieceBitGrid8::new(*pentomino[&'L']).xy, (2, 4));
+        assert_eq!(PieceBitGrid8::new(*pentomino[&'U']).xy, (3, 2));
+    }
+
+    #[test]
     fn test_piece_bitgrid8_display() {
-        assert_eq!(format!("{}", PieceBitGrid8::try_from(BitGrid8(0x8040201008040201)).unwrap()), 
+        let pentomino = BitGrid8::pentomino_map();
+        assert_eq!(format!("{}", PieceBitGrid8::new(0x8040201008040201)), 
+            "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
+        assert_eq!(format!("{}", PieceBitGrid8::new(*pentomino[&'U'])),
             "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
         // assert_eq!(format!("{}", PieceBitGrid8(0x1)), 
             // "#.......\n........\n........\n........\n........\n........\n........\n........\n");
@@ -269,6 +273,20 @@ mod test {
         assert_eq!((&pentomino[&'Y']).origin_dihedral_all().len(), 8);
         assert_eq!((&pentomino[&'V']).origin_dihedral_all().len(), 4);
         assert_eq!((&pentomino[&'W']).origin_dihedral_all().len(), 4);
+    }
+
+    /// Shift a piece in the 8-grid towards the origin so that it touches the x and y axes
+    pub fn shift_to_origin(grid: BitGrid8) -> Self {
+        let mut shape = grid;
+        // y-shift the zero rows away
+        shape = shape >> ((shape.trailing_zeros() / 8) * 8);
+        // x-shift the zero rows away
+        let mut x_shift = shape >> 32;
+        x_shift |= x_shift >> 32;
+        x_shift |= x_shift >> 16;
+        x_shift |= x_shift >> 8;
+        shape = shape >> x_shift.trailing_zeros();
+        Self{ bitgrid: shape, xy: Self::bounding_box(shape) }
     }
 
 */
