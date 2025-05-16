@@ -110,11 +110,12 @@ impl fmt::Debug for PieceBitGrid8 {
 
 impl fmt::Display for PieceBitGrid8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let (m, n) = self.xy;
         write!(f, "{}",     
-            (0..self.xy.0).flat_map(move |x| (0..self.xy.1).map(move |y| (x, y)))
-            // (0..64)
+            (0..m*n)
+            .map(|l| (l%m, l / m) )
             .map(|(x,y)| format!("{}{}", if (*self.bitgrid >> (x+8*y)) & 0x1 == 1 { "#" } else { "." },
-                if y == (self.xy.1 - 1) { "\n" } else { "" }))
+                if x+1 == m { "\n" } else { "" }))
             .collect::<String>()
             )
     } 
@@ -174,9 +175,9 @@ mod test {
         assert_eq!(format!("{}", PieceBitGrid8::new(0x8040201008040201)), 
             "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
         assert_eq!(format!("{}", PieceBitGrid8::new(*pentomino[&'U'])),
-            "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
-        // assert_eq!(format!("{}", PieceBitGrid8(0x1)), 
-            // "#.......\n........\n........\n........\n........\n........\n........\n........\n");
+            "#.#\n###\n");
+        assert_eq!(format!("{}", PieceBitGrid8::new(*pentomino[&'F'])),
+            ".##\n##.\n.#.\n");
     }
 
     /*
