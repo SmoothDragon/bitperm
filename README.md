@@ -9,6 +9,7 @@ cargo bench --baseline
 # TODO BitGrid:
 Extend bit operations to 8-bit matrices over u64.
 Separate OriginBitGrid8 from BitGrid8 (different files that respect boundary and use deref)
+Functor completed, but needs to be wrapped in Result not Option.
 
 # General TODO
 Benchmark inversions

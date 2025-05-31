@@ -10,9 +10,6 @@ anyhow = "1.0.97"
 arrayvec = "0.7.6"
 derive_more = { version = "2.0.1", features = ["add", "add_assign", "from", "mul", "mul_assign"] }
 flowscad = "0.1.2"
-# bitman = "2.0.1"
-# criterion = "0.5.1"
-# iterator = "0.1.0"
 nonzero = "0.2.0"
 thiserror = "2.0.12"
 
