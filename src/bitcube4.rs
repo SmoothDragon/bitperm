@@ -1,5 +1,5 @@
 use std::fmt;
-use std::ops::*;
+// use std::ops::*;
 use std::collections::HashSet;
 use std::iter::FromIterator;
 
@@ -19,11 +19,59 @@ use crate::bitcube3::BitCube3;
 // -----------------------------------------------------------------
 // Position at (x,y,z) = x + 4*y + 16*z
 // Rotations will happen from the center of the cube
+//
+// The operators >> and << implement unbounded_shr() and unbounded_shl(),
+// so they may be used safely.
+
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord,
     BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, 
     )]
 pub struct BitCube4(pub u64);
+
+/// Let BitCube4 use >> operator in the safe manner of unbounded_shr()
+impl core::ops::Shr<u32> for BitCube4 {
+    type Output = Self;
+
+    fn shr(self, shift: u32) -> Self {
+        Self(self.unbounded_shr(shift))
+    }
+}
+
+/// Let BitCube4 use << operator in the safe manner of unbounded_shl()
+impl core::ops::Shl<u32> for BitCube4 {
+    type Output = Self;
+
+    fn shl(self, shift: u32) -> Self {
+        Self(self.unbounded_shl(shift))
+    }
+}
+
+/// Define BitAnd with u64 for BitCube4
+impl core::ops::BitAnd<u64> for BitCube4 {
+    type Output = Self;
+
+    fn bitand(self, rhs: u64) -> Self {
+        Self(self.0 & rhs)
+    }
+}
+
+/// Define BitOr with u64 for BitCube4
+impl core::ops::BitOr<u64> for BitCube4 {
+    type Output = Self;
+
+    fn bitor(self, rhs: u64) -> Self {
+        Self(self.0 | rhs)
+    }
+}
+
+impl core::ops::Deref for BitCube4 {
+    type Target = u64;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
 
 pub struct BitCube4Rotations(pub ArrayVec<BitCube4, 24>);
 
@@ -332,7 +380,6 @@ impl BitAndAssign for BitCube4 {
         *self = Self(self.0 & rhs.0)
     }
 }
-*/
 
 impl BitAnd<u64> for BitCube4 {
     type Output = Self;
@@ -341,22 +388,7 @@ impl BitAnd<u64> for BitCube4 {
         Self(self.0 & rhs)
     }
 }
-
-impl Shl<u32> for BitCube4 {
-    type Output = Self;
-
-    fn shl(self, rhs: u32) -> Self::Output {
-        Self(self.0.unbounded_shl(rhs))
-    }
-}
-
-impl Shr<u32> for BitCube4 {
-    type Output = Self;
-
-    fn shr(self, rhs: u32) -> Self::Output {
-        Self(self.0.unbounded_shr(rhs))
-    }
-}
+*/
 
 // impl fmt::Debug for BitCube4 {
     // fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
