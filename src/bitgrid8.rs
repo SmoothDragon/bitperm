@@ -219,30 +219,27 @@ impl BitGrid8 {
         vec
     }
 
-    /*
     /// 2x2x2 Example: 01 23 | 45 67 => 20 31 | 64 75 
     /// The z-rotation is the easiest to understand since the rotation happens in the xy-plane and
     /// is copied in the other dimension.
     /// 23 32 31
     /// 01 10 20
     pub fn rotate(self) -> Self { 
-        todo!();
         let mut square = self.0;
-        // Swap 4x4 squares left <-> right
-        swap_mask_shift_u64(&mut square, 0x0f0f_0f0f_0f0f_0f0f_u64, 4);
         // Swap diagonal 4x4 squares
-        swap_mask_shift_u64(&mut square, 0xf0f0_f0f0_0f0f_0f0f_u64, 36);
-        // Swap 2x2 squares left <-> right
-        swap_mask_shift_u64(&mut square, 0x3333_3333_3333_3333_u64, 2);
+        swap_mask_shift_u64(&mut square, 0x0f0f_0f0f_u64, 36);
+        // Swap 4x4 squares top <-> bottom
+        swap_mask_shift_u64(&mut square, 0xffff_ffff_u64, 32);
         // Swap diagonal 2x2 squares
-        swap_mask_shift_u64(&mut square, 0x0033_0033_0033_0033_u64, 10);
-        // Within 2x2 squares swap left <-> right columns
-        swap_mask_shift_u64(&mut square, 0x5555_5555_5555_5555_u64, 1);
+        swap_mask_shift_u64(&mut square, 0x0000_3333_0000_3333_u64, 18);
+        // Swap 2x2 squares top <-> bottom
+        swap_mask_shift_u64(&mut square, 0xffff_0000_ffff_u64, 16);
         // Within 2x2 squares swap diagonal entries
         swap_mask_shift_u64(&mut square, 0x0055_0055_0055_0055_u64, 9);
+        // Within 2x2 squares swap top <-> bottom rows
+        swap_mask_shift_u64(&mut square, 0x00ff_00ff_00ff_00ff_u64, 8);
         BitGrid8(square)
     }
-    */
 
     /// 2x2x2 Example: 01 23 | 45 67 => 20 31 | 64 75 
     /// The z-rotation is the easiest to understand since the rotation happens in the xy-plane and
@@ -292,19 +289,17 @@ impl BitGrid8 {
         Self(shape)
     }
 
-    /// Find the (x,y) bounding box of a piece shifted to origin
-    pub fn origin_bounding_box(self) -> (u32, u32) {
-        let mut shape = self.0;
+    /// Find the (x,y) bounding box of a BitGrid8.
+    /// The box includes the origin and all nonzero squares.
+    pub fn bounding_box(self) -> (u8, u8) {
+        let mut shape = self;
         // Collect ones on x and y axes
-        shape |= (shape.unbounded_shr(1) & 0x7f7f7f7f7f7f7f7f) | shape.unbounded_shr(8);
-        shape |= (shape.unbounded_shr(2) & 0x3f3f3f3f3f3f3f3f) | shape.unbounded_shr(16);
-        shape |= (shape.unbounded_shr(4) & 0x0f0f0f0f0f0f0f0f) | shape.unbounded_shr(32);
-        shape &= 0x01010101010101ff;  // Creates L on x and y axes
-        let x = shape & 0xff;
-        let len_x = x.count_ones();
-        let y = shape & 0x0101010101010101;
-        let len_y = (x * y).count_ones() / len_x;
-        (len_x as u32, len_y as u32)
+        shape |= ((shape >> 1) & 0x7f7f7f7f7f7f7f7f) | shape >> 8;
+        shape |= ((shape >> 2) & 0x3f3f3f3f3f3f3f3f) | shape >> 16;
+        shape |= ((shape >> 4) & 0x0f0f0f0f0f0f0f0f) | shape >> 32;
+        let len_x = (shape & 0xff).count_ones();
+        let len_y = (shape & 0x0101010101010101).count_ones();
+        (len_x as u8, len_y as u8)
     }
 
     /* TODO: should the shifts be by xx,yy instead of x,y?
@@ -401,25 +396,31 @@ mod test {
         assert_eq!(UPPER_RIGHT.shift_to_origin(), UPPER_LEFT);
         assert_eq!(ANTIDIAG.shift_to_origin(), ANTIDIAG);
         assert_eq!(CENTER_XY.shift_to_origin(), CENTER_XY);
-    }
+        assert_eq!(BitGrid8(0xf00f00).shift_to_origin(), BitGrid8(0xf00f));
 
-    #[test]
-    fn test_origin_bounding_box() {
-        assert_eq!(FULL.origin_bounding_box(), (8,8));
-        assert_eq!(UPPER_LEFT.origin_bounding_box(), (4,4));
-        assert_eq!(ANTIDIAG.origin_bounding_box(), (8,8));
-        assert_eq!(HIGHFIVE.origin_bounding_box(), (8,5));
-        assert_eq!(SMALL_FIVE.origin_bounding_box(), (4,5));
-    }
-
-    #[test]
-    fn test_origin_bounding_box_pentomino() {
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!((&pentomino[&'F']).origin_bounding_box(), (3,3));
-        assert_eq!((&pentomino[&'I']).origin_bounding_box(), (1,5));
-        assert_eq!((&pentomino[&'L']).origin_bounding_box(), (2,4));
-        assert_eq!((&pentomino[&'P']).origin_bounding_box(), (2,3));
-        assert_eq!((&pentomino[&'W']).origin_bounding_box(), (3,3));
+        assert_eq!((*(&pentomino[&'F']) << 24).shift_to_origin(), pentomino[&'F']);
+    }
+
+    #[test]
+    fn test_bounding_box() {
+        assert_eq!(FULL.bounding_box(), (8,8));
+        assert_eq!(UPPER_LEFT.bounding_box(), (4,4));
+        assert_eq!(ANTIDIAG.bounding_box(), (8,8));
+        assert_eq!(HIGHFIVE.bounding_box(), (8,5));
+        assert_eq!(SMALL_FIVE.bounding_box(), (4,5));
+        assert_eq!(BitGrid8(0).bounding_box(), (0,0));
+        assert_eq!(BitGrid8(1).bounding_box(), (1,1));
+    }
+
+    #[test]
+    fn test_bounding_box_pentomino() {
+        let pentomino = BitGrid8::pentomino_map();
+        assert_eq!((&pentomino[&'F']).bounding_box(), (3,3));
+        assert_eq!((&pentomino[&'I']).bounding_box(), (1,5));
+        assert_eq!((&pentomino[&'L']).bounding_box(), (2,4));
+        assert_eq!((&pentomino[&'P']).bounding_box(), (2,3));
+        assert_eq!((&pentomino[&'W']).bounding_box(), (3,3));
     }
 
     
@@ -433,16 +434,27 @@ mod test {
     // }
 
     #[test]
+    fn test_rotate() {
+        assert_eq!(BitGrid8(0x171515151515151d).rotate(), HIGHFIVE);
+        assert_eq!(BitGrid8(0x1715151d00000000).rotate(), SMALL_FIVE);
+        assert_eq!(FULL.rotate(), FULL);
+        assert_eq!(UPPER_LEFT, LOWER_LEFT.rotate());
+        assert_eq!(ANTIDIAG, IDENTITY.rotate());
+    }
+
+    #[test]
     fn test_rotate_cc() {
         assert_eq!(HIGHFIVE.rotate_cc(), BitGrid8(0x171515151515151d));
         assert_eq!(SMALL_FIVE.rotate_cc(), BitGrid8(0x1715151d00000000));
         assert_eq!(ANTIDIAG, IDENTITY.rotate_cc());
         assert_eq!(FULL.rotate_cc(), FULL);
         assert_eq!(UPPER_LEFT.rotate_cc(), LOWER_LEFT);
-        // println!("{}\n{}", HIGHFIVE, HIGHFIVE.rotate());
-        // println!("{}\n{}", SMALL_FIVE, SMALL_FIVE.rotate_cc());
-        // println!("{}\n{}", CHECKER2, CHECKER2.rotate_cc());
-        // assert_eq!(ANTIDIAG, IDENTITY.rotate());
+    }
+
+    #[test]
+    fn test_rotate_composition() {
+        assert_eq!(BitGrid8(0x9288_7746_3521_0076).rotate().rotate_cc(), BitGrid8(0x9288_7746_3521_0076));
+        assert_eq!(BitGrid8(0x9288_7746_3521_0076).rotate_cc().rotate(), BitGrid8(0x9288_7746_3521_0076));
     }
 
     #[test]
@@ -510,6 +522,7 @@ mod test {
             // println!("{}:\n{}", key, value);
         // }
         assert_eq!(&pentomino[&'X'], &pentomino[&'X'].rotate_cc().shift_to_origin());
+        assert_eq!(&pentomino[&'X'], &pentomino[&'X'].rotate().shift_to_origin());
         assert_eq!((&pentomino[&'X']).origin_rotate_all().len(), 1);
         assert_eq!((&pentomino[&'F']).origin_rotate_all().len(), 4);
         assert_eq!((&pentomino[&'Z']).origin_rotate_all().len(), 2);
