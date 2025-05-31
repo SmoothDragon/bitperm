@@ -1,14 +1,3 @@
-use std::fmt;
-// use std::collections::HashMap;
-
-
-use derive_more::*;
-use thiserror::*;
-// use arrayvec::*;
-
-// use crate::bitlib::swap_mask_shift_u64;
-use crate::bitgrid8::*;
-
 // -----------------------------------------------------------------
 // 2D geometric pieces shifted to the origin an 8x8 grid
 // Bounding box information is included for other useful functions
@@ -20,7 +9,26 @@ use crate::bitgrid8::*;
 // Position at (x,y) = x + 8*y
 // The low bit corresponds to the upper left most position.
 // The high bit corresponds to the lower right most position.
+// 00 01 02 03 04 05 06 07
+// 10 11 12 13 14 15 16 17
+// 20 21 22 23 24 25 26 27
+// 30 31 32 33 34 35 36 37
+// 40 41 42 43 44 45 46 47
+// 50 51 52 53 54 55 56 57
+// 60 61 62 63 64 65 66 67
+// 70 71 72 73 74 75 76 77
+//
 // Rotations will happen from the center of the square.
+
+use std::fmt;
+use std::collections::HashMap;
+
+use derive_more::*;
+use thiserror::*;
+use arrayvec::*;
+
+// use crate::bitlib::swap_mask_shift_u64;
+use crate::bitgrid8::*;
 
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -36,54 +44,42 @@ pub struct PieceGrid8Error(u64, String);
 impl PieceBitGrid8 {
     pub fn new(raw_u64: u64) -> Self {
         let grid = BitGrid8(raw_u64).shift_to_origin();
-        Self{ bitgrid: grid, xy: Self::bounding_box(grid) }
+        Self{ bitgrid: grid, xy: grid.bounding_box() }
     }
 
-    /// Find the (x,y) bounding box of a piece shifted to origin
-    fn bounding_box(grid: BitGrid8) -> (u8, u8) {
-        let mut shape = grid;
-        // Collect ones on x and y axes
-        shape |= ((shape >> 1) & 0x7f7f7f7f7f7f7f7f) | shape >> 8;
-        shape |= ((shape >> 2) & 0x3f3f3f3f3f3f3f3f) | shape >> 16;
-        shape |= ((shape >> 4) & 0x0f0f0f0f0f0f0f0f) | shape >> 32;
-        let len_x = (shape & 0xff).count_ones();
-        let len_y = (shape & 0x0101010101010101).count_ones();
-        (len_x as u8, len_y as u8)
-    }
-
-    /*
     /// Pentominoes indexed by wikipedia naming convention.
     /// Diagonal presentations are rotated 45 degrees clockwise.
     pub fn pentomino_map() -> HashMap::<char, PieceBitGrid8> {
         HashMap::<char, PieceBitGrid8>::from([
-            ('F', PieceBitGrid8(0x20306)),
-            ('I', PieceBitGrid8(0x101010101)),
-            ('L', PieceBitGrid8(0x3010101)),
-            ('N', PieceBitGrid8(0xe03)),
-            ('P', PieceBitGrid8(0x10303)),
-            ('T', PieceBitGrid8(0x20207)),
-            ('U', PieceBitGrid8(0x705)),
-            ('V', PieceBitGrid8(0x70101)),
-            ('W', PieceBitGrid8(0x60301)),
-            ('X', PieceBitGrid8(0x20702)),
-            ('Y', PieceBitGrid8(0xf04)),
-            ('Z', PieceBitGrid8(0x60203)),
+            ('F', PieceBitGrid8::new(0x20306)),
+            ('I', PieceBitGrid8::new(0x101010101)),
+            ('L', PieceBitGrid8::new(0x3010101)),
+            ('N', PieceBitGrid8::new(0xe03)),
+            ('P', PieceBitGrid8::new(0x10303)),
+            ('T', PieceBitGrid8::new(0x20207)),
+            ('U', PieceBitGrid8::new(0x705)),
+            ('V', PieceBitGrid8::new(0x70101)),
+            ('W', PieceBitGrid8::new(0x60301)),
+            ('X', PieceBitGrid8::new(0x20702)),
+            ('Y', PieceBitGrid8::new(0xf04)),
+            ('Z', PieceBitGrid8::new(0x60203)),
         ])
     }
 
     /// Produce all rotations of a BitGrid object translated towards origin.
     /// Prefer a gray code path through all rotations
-    pub fn origin_rotate_all(self) -> ArrayVec::<BitGrid8, 4> {
-        let mut vec = ArrayVec::<BitGrid8, 4>::new();
-        let mut x = self.shift_to_origin();
-        vec.push(x);
-        for _ in 0..3 { x = x.rotate_cc().shift_to_origin(); vec.push(x); }
+    pub fn rotate_all(self) -> ArrayVec::<PieceBitGrid8, 4> {
+        let mut vec = ArrayVec::<PieceBitGrid8, 4>::new();
+        let mut grid = self.bitgrid;
+        vec.push(PieceBitGrid8::new(*grid));
+        for _ in 0..3 { grid = grid.rotate(); vec.push(PieceBitGrid8::new(*grid)); }
         vec.sort_unstable();
         let symmetries = vec.partition_dedup().0.len();  // Move duplicates to the end.
         vec.truncate(symmetries);
         vec
     }
 
+    /*
     /// Produce all rotations and reflections of a BitGrid object translated towards origin.
     /// Prefer a gray code path through all rotations
     pub fn origin_dihedral_all(self) -> ArrayVec::<BitGrid8, 8> {
@@ -121,6 +117,12 @@ impl fmt::Display for PieceBitGrid8 {
     } 
 } 
 
+impl std::convert::From<BitGrid8> for PieceBitGrid8 {
+    fn from(grid: BitGrid8) -> PieceBitGrid8 {
+        Self::new(*grid)
+    }
+}
+
 
 // impl std::convert::TryFrom<BitGrid8> for PieceBitGrid8 {
     // type Error = PieceGrid8Error;
@@ -144,7 +146,6 @@ impl core::ops::Deref for PieceBitGrid8 {
 mod test {
     use super::*;
     
-
     #[test]
     fn test_size_of_piece_grid8() {
         use std::mem;
@@ -159,14 +160,13 @@ mod test {
     }
 
     #[test]
-    fn test_new_pentomino() {
+    fn test_from_bitgrid8() {
+        assert_eq!(PieceBitGrid8::from(BitGrid8(0x8040201008040201)).bitgrid, BitGrid8(0x8040201008040201));
+        assert_eq!(PieceBitGrid8::from(BitGrid8(0x8040201008040201)).xy, (8,8));
+
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!(PieceBitGrid8::new(*pentomino[&'F']).bitgrid, BitGrid8(0x20306));
-        assert_eq!(PieceBitGrid8::new(*(pentomino[&'F'] << 20)).bitgrid, BitGrid8(0x20306));
-        assert_eq!(PieceBitGrid8::new(*pentomino[&'F']).xy, (3, 3));
-        assert_eq!(PieceBitGrid8::new(*pentomino[&'I']).xy, (1, 5));
-        assert_eq!(PieceBitGrid8::new(*pentomino[&'L']).xy, (2, 4));
-        assert_eq!(PieceBitGrid8::new(*pentomino[&'U']).xy, (3, 2));
+        assert_eq!(PieceBitGrid8::from(pentomino[&'U']).xy, (3,2));
+        assert_eq!(PieceBitGrid8::from(pentomino[&'U']).bitgrid, pentomino[&'U']);
     }
 
     #[test]
@@ -178,6 +178,21 @@ mod test {
             "#.#\n###\n");
         assert_eq!(format!("{}", PieceBitGrid8::new(*pentomino[&'F'])),
             ".##\n##.\n.#.\n");
+        assert_eq!(format!("{}", PieceBitGrid8::new(0x8040201008040201)), 
+            "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
+        assert_eq!(format!("{}", PieceBitGrid8::new(0x1)), 
+            "#\n");
+    }
+
+    #[test]
+    fn test_new_pentomino() {
+        let pentomino = BitGrid8::pentomino_map();
+        assert_eq!(PieceBitGrid8::new(*pentomino[&'F']).bitgrid, BitGrid8(0x20306));
+        assert_eq!(PieceBitGrid8::new(*(pentomino[&'F'] << 20)).bitgrid, BitGrid8(0x20306));
+        assert_eq!(PieceBitGrid8::new(*pentomino[&'F']).xy, (3, 3));
+        assert_eq!(PieceBitGrid8::new(*pentomino[&'I']).xy, (1, 5));
+        assert_eq!(PieceBitGrid8::new(*pentomino[&'L']).xy, (2, 4));
+        assert_eq!(PieceBitGrid8::new(*pentomino[&'U']).xy, (3, 2));
     }
 
     /*
