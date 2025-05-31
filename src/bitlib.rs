@@ -4,7 +4,7 @@
 
 // TODO: Add u128 as needed
 
-// #[inline]
+#[inline]
 pub fn swap_mask_shift_u32(y: &mut u32, mask: u32, shift: u32) {
    *y ^= (*y).unbounded_shr(shift) & mask;
    *y ^= (*y & mask).unbounded_shl(shift);
@@ -16,6 +16,14 @@ pub fn swap_mask_shift_u64(y: &mut u64, mask: u64, shift: u32) {
    *y ^= (*y).unbounded_shr(shift) & mask;
    *y ^= (*y & mask).unbounded_shl(shift);
    *y ^= (*y).unbounded_shr(shift) & mask;
+}
+
+pub fn sms64(mask: u64, shift: u32) -> Option<impl Fn(&mut u64) -> ()> {
+    if mask.unbounded_shl(shift) & mask == 0 {
+        Some(move |y: &mut u64| { swap_mask_shift_u64(y, mask, shift) })
+    } else {
+        None
+    }
 }
 
 /*
@@ -65,3 +73,22 @@ pub mod cu27 {
     pub const CENTER_Z: BitCube3 = BitCube3(0o020_020_020_u32);
     pub const CENTER_ALL: BitCube3 = BitCube3(CENTER_X.0 | CENTER_Y.0 | CENTER_Z.0);
 }
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn test_sms64(){
+        let mut y: u64 = 0xffff_ffff_u64;
+        // Swap 4x4 squares top <-> bottom
+        swap_mask_shift_u64(&mut y, 0xffff_ffff_u64, 32);
+        assert_eq!(y, 0xffff_ffff_0000_0000_u64);
+
+        // Swap back 4x4 squares top <-> bottom
+        let func = sms64(0xffff_ffff_u64, 32).unwrap();
+        func(&mut y);
+        assert_eq!(y, 0xffff_ffff_u64);
+    }
+}
+
