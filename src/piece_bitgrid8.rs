@@ -47,6 +47,33 @@ impl PieceBitGrid8 {
         Self{ bitgrid: grid, xy: grid.bounding_box() }
     }
 
+    /// Find the (x,y) bounding box of a piece shifted to origin
+    fn bounding_box(grid: BitGrid8) -> (u32, u32) {
+        let mut shape = grid;
+        // Collect ones on x and y axes
+        shape |= ((shape >> 1) & 0x7f7f7f7f7f7f7f7f) | shape >> 8;
+        shape |= ((shape >> 2) & 0x3f3f3f3f3f3f3f3f) | shape >> 16;
+        shape |= ((shape >> 4) & 0x0f0f0f0f0f0f0f0f) | shape >> 32;
+        let len_x = (shape & 0xff).count_ones();
+        let len_y = (shape & 0x0101010101010101).count_ones();
+        (len_x as u32, len_y as u32)
+    }
+
+    pub fn rotate_cc(self) -> Self {
+        Self{ bitgrid: self.bitgrid.rotate_cc() >> ((8 - self.xy.0) << 3).into(),
+            xy: (self.xy.1, self.xy.0),
+            ..self
+        }
+    }
+
+    // Flip along x-axis. For 2D this is the same as mirror.
+    pub fn flip_x(self) -> Self { 
+        Self{ bitgrid: self.bitgrid.flip_x() >> ((8 - self.xy.1) << 3).into(),
+            ..self
+        }
+    }
+
+    /*
     /// Pentominoes indexed by wikipedia naming convention.
     /// Diagonal presentations are rotated 45 degrees clockwise.
     pub fn pentomino_map() -> HashMap::<char, PieceBitGrid8> {
@@ -78,6 +105,7 @@ impl PieceBitGrid8 {
         vec.truncate(symmetries);
         vec
     }
+    */
 
     /*
     /// Produce all rotations and reflections of a BitGrid object translated towards origin.
@@ -193,6 +221,24 @@ mod test {
         assert_eq!(PieceBitGrid8::new(*pentomino[&'I']).xy, (1, 5));
         assert_eq!(PieceBitGrid8::new(*pentomino[&'L']).xy, (2, 4));
         assert_eq!(PieceBitGrid8::new(*pentomino[&'U']).xy, (3, 2));
+    }
+
+    #[test]
+    fn test_rotate_cc() {
+        let pentomino = BitGrid8::pentomino_map();
+        assert_eq!(PieceBitGrid8::new(*pentomino[&'U']).rotate_cc(),
+            PieceBitGrid8::new(0x30203));
+        assert_eq!(PieceBitGrid8::new(*pentomino[&'X']).rotate_cc(),
+            PieceBitGrid8::new(*pentomino[&'X']));
+    }
+
+    #[test]
+    fn test_flip_x() {
+        let pentomino = BitGrid8::pentomino_map();
+        assert_eq!(PieceBitGrid8::new(*pentomino[&'U']).flip_x(),
+            PieceBitGrid8::new(0x507));
+        assert_eq!(PieceBitGrid8::new(*pentomino[&'X']).flip_x(),
+            PieceBitGrid8::new(*pentomino[&'X']));
     }
 
     /*
