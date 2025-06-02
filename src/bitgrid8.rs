@@ -157,6 +157,30 @@ impl core::ops::Deref for BitGrid8 {
     }
 }
 
+impl Iterator for BitGrid8 {
+    type Item = Self;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if **self != 0 {
+            let bit = self.isolate_least_significant_one();
+            *self ^= Self(bit);
+            Some(Self(bit))
+        } else {
+            None
+        }
+    }
+}
+
+    // pub gen fn positions(self) -> impl Iterator<Item = u64> {
+        // let mut grid = *self;
+        // while grid != 0 {
+            // bit = grid.isolate_least_significant_one();
+            // grid ^= bit;
+            // yield bit;
+        // }
+    // }
+
+
 impl BitGrid8 {
     /// Pentominoes indexed by wikipedia naming convention.
     /// Diagonal presentations are rotated 45 degrees clockwise.
@@ -176,6 +200,7 @@ impl BitGrid8 {
             ('Z', BitGrid8(0x60203)),
         ])
     }
+
 
     /// Produce all rotations of a BitGrid object translated towards origin.
     /// Prefer a gray code path through all rotations
@@ -414,6 +439,15 @@ mod test {
     }
 
     #[test]
+    fn test_bitgrid8_iterator() {
+        let pentomino = BitGrid8::pentomino_map();
+        let pent_i = pentomino[&'I'];
+        assert_eq!(pent_i.into_iter().collect::<Vec<_>>(), [BitGrid8(0x00000001), BitGrid8(0x00000100), BitGrid8(0x00010000), BitGrid8(0x01000000), BitGrid8(0x100000000)]);
+        assert_eq!(pent_i.rotate().into_iter().collect::<Vec<_>>(), [BitGrid8(0x00000008), BitGrid8(0x00000010), BitGrid8(0x00000020), BitGrid8(0x00000040), BitGrid8(0x00000080)]);
+    }
+
+    
+    #[test]
     fn test_bounding_box_pentomino() {
         let pentomino = BitGrid8::pentomino_map();
         assert_eq!((&pentomino[&'F']).bounding_box(), (3,3));
@@ -527,6 +561,15 @@ mod test {
         assert_eq!((&pentomino[&'F']).origin_rotate_all().len(), 4);
         assert_eq!((&pentomino[&'Z']).origin_rotate_all().len(), 2);
     }
+
+    #[test]
+    fn test_blsi() {
+        let n: u64 = 0b_01100100;
+
+        assert_eq!(n.isolate_least_significant_one(), 0b_00000100);
+        assert_eq!(0_u64.isolate_least_significant_one(), 0);
+    }
+
 
     // #[test]
     // fn test_shift_w() {

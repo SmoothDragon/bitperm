@@ -54,3 +54,6 @@ p[a] = (p4.0 >> (4*a)) & 1
 p[a] ^= ((p4.1 >> (4*a)) & 1) << 1
 p[a] ^= ((p4.2 >> (4*a)) & 1) << 2
 p[a] ^= ((p4.3 >> (4*a)) & 1) << 3
+
+Completed:
+Iterator through nonzero positions of Bitgrid8
