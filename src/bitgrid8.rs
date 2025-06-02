@@ -106,49 +106,6 @@ pub const CHECKER2: BitGrid8 = BitGrid8(0x0c0c_0303);
 pub const IDENTITY:BitGrid8 = BitGrid8(0x8040201008040201);
 pub const ANTIDIAG:BitGrid8 = BitGrid8(0x0102040810204080);
 
-#[derive(Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord)]
-pub struct OriginBitGrid8Old(BitGrid8);
-
-impl OriginBitGrid8Old {
-    pub fn parse(grid: BitGrid8) -> Result<OriginBitGrid8Old, String> {
-        if *grid & 0xff == 0 { return Err("First row is all zeros.".to_string()); }
-        if *grid & REP_01 == 0 { return Err("First column is all zeros.".to_string()); }
-        Ok(Self(grid))
-    }
-
-    /// Shift a piece in the 8-grid towards the origin so that it touches the x and y axes
-    pub fn shift_to_origin(grid: BitGrid8) -> Self {
-        let mut shape = grid;
-        // y-shift the zero rows away
-        shape = shape >> ((shape.trailing_zeros() / 8) * 8);
-        // x-shift the zero rows away
-        let mut x_shift = shape >> 32;
-        x_shift |= x_shift >> 32;
-        x_shift |= x_shift >> 16;
-        x_shift |= x_shift >> 8;
-        shape = shape >> x_shift.trailing_zeros();
-        Self(shape)
-    }
-}
-
-impl std::convert::TryFrom<BitGrid8> for OriginBitGrid8Old {
-    type Error = String;
-
-    fn try_from(grid: BitGrid8) -> Result<OriginBitGrid8Old, Self::Error> {
-        if *grid & 0xff == 0 { return Err("First row is all zeros.".to_string()); }
-        if *grid & REP_01 == 0 { return Err("First column is all zeros.".to_string()); }
-        Ok(Self(grid))
-    }
-}
-
-impl core::ops::Deref for OriginBitGrid8Old {
-    type Target = BitGrid8;
-
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
-
 impl core::ops::Deref for BitGrid8 {
     type Target = u64;
 
@@ -204,6 +161,7 @@ impl BitGrid8 {
 
     /// Produce all rotations of a BitGrid object translated towards origin.
     /// Prefer a gray code path through all rotations
+    /// TODO: This should just rotate and not shift to oorigin like piece_bitgtid8
     pub fn origin_rotate_all(self) -> ArrayVec::<BitGrid8, 4> {
         let mut vec = ArrayVec::<BitGrid8, 4>::new();
         let mut x = self.shift_to_origin();
@@ -217,6 +175,7 @@ impl BitGrid8 {
 
     /// Produce all rotations and reflections of a BitGrid object translated towards origin.
     /// Prefer a gray code path through all rotations
+    /// TODO: This should just rotate and not shift to oorigin like piece_bitgtid8
     pub fn origin_dihedral_all(self) -> ArrayVec::<BitGrid8, 8> {
         let mut vec = ArrayVec::<BitGrid8, 8>::new();
         let mut x = self.shift_to_origin();
@@ -340,6 +299,19 @@ impl BitGrid8 {
         shapes
     }
     */
+
+    /// Shifts off the side are lost.
+    pub fn shift_x(self, shift: i32) -> Self { 
+        if shift > 7 || shift < -7 { return Self(0) };
+        if shift == 0 { return self };
+        if shift > 0 {
+            let shift: u32 = shift.try_into().unwrap();
+            (self << shift) & (((1 << (8-shift)) - 1) << shift)
+        } else {
+            let shift: u32 = (-shift).try_into().unwrap();
+            (self >> shift) & (((1 << (8-shift)) - 1))
+        }
+    }
 
     pub fn unbounded_shift_n(self) -> Self {
         Self(self.0.unbounded_shr(8))
