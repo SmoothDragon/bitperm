@@ -319,27 +319,36 @@ impl BitGrid8 {
             BitGrid8(mask & self.0.unbounded_shr(shift))
             // BitGrid8((((1 << (8-shift)) - 1) * 0x0101_0101_0101_0101_u64) & (self.0.unbounded_shr(shift))
         }
-        /*
-        if shift > 0 {
-            let shift: u32 = shift.unsigned_abs();
-            // print_type(&shift);
-            // let mask = ((((1 << (8-shift)) - 1)) * 0x0101_0101_0101_0101_u64);
-            // print_type(&mask);
-            // BitGrid8(self.0.unbounded_shl(shift) & ((((1 << (8-shift)) - 1) << shift) * 0x0101_0101_0101_0101_u64))
-            // (self << shift) 
-            // BitGrid8(self.0.unbounded_shl(shift))
-            // BitGrid8(shift)
-            BitGrid8((((1 << (8-shift)) - 1) << shift) * 0x0101_0101_0101_0101_u64) & (self.0.unbounded_shl(shift))
-        } else {
-            let shift: u32 = shift.unsigned_abs();
-            (self >> shift) & ((((1 << (8-shift)) - 1)) * 0x0101_0101_0101_0101_u64)
-        }
-        */
     }
 
     /// Verifies that the x_shift does not cross the boundary edges
     pub fn checked_shift_x(self, shift: i32) -> Option<Self> { 
         let shifted = self.shift_x(shift);
+        if self.0.count_ones() == shifted.0.count_ones() {
+            Some(shifted)
+        } else {
+            None
+        }
+    }
+
+    /// Shifts off the side are lost.
+    pub fn shift_y(self, shift: i32) -> Self { 
+        if shift > 7 || shift < -7 { return Self(0) };
+        if shift == 0 { return self };
+        let sign = shift > 0;
+        let shift: u32 = shift.unsigned_abs().unbounded_shl(3);  // Shift by multiples of 8
+        // let mask: u64 = ((1_u64 << (8_u32-shift)) - 1_u64) * 0x0101_0101_0101_0101_u64;
+        let mask: u64 = 0xffff_ffff_ffff_ffff_u64.unbounded_shr(shift);
+        if sign {
+            BitGrid8(mask & self.0.unbounded_shr(shift))
+        } else {
+            BitGrid8((mask & self.0).unbounded_shl(shift))
+        }
+    }
+
+    /// Verifies that the x_shift does not cross the boundary edges
+    pub fn checked_shift_y(self, shift: i32) -> Option<Self> { 
+        let shifted = self.shift_y(shift);
         if self.0.count_ones() == shifted.0.count_ones() {
             Some(shifted)
         } else {
@@ -450,10 +459,35 @@ mod test {
     #[test]
     fn test_checked_shift_x() {
         assert_eq!(FULL.checked_shift_x(1), None);
+        assert_eq!(FULL.checked_shift_x(-1), None);
 
         let pentomino = BitGrid8::pentomino_map();
         assert_eq!((*(&pentomino[&'F'])).checked_shift_x(1), Some(BitGrid8(0x4060c)));
         assert_eq!((*(&pentomino[&'F'])).checked_shift_x(-1), None);
+    }
+
+    #[test]
+    fn test_shift_y() {
+        assert_eq!(FULL.shift_y(1), BitGrid8(0x00ff_ffff_ffff_ffff_u64));
+        assert_eq!(FULL.shift_y(-1), BitGrid8(0xffff_ffff_ffff_ff00_u64));
+        assert_eq!(FULL.shift_y(4), BitGrid8(0x0000_0000_ffff_ffff_u64));
+        assert_eq!(FULL.shift_y(-4), BitGrid8(0xffff_ffff_0000_0000_u64));
+        assert_eq!(FULL.shift_y(-8), BitGrid8(0));
+        assert_eq!(FULL.shift_y(8), BitGrid8(0));
+
+        let pentomino = BitGrid8::pentomino_map();
+        assert_eq!((*(&pentomino[&'F'])).shift_y(1), BitGrid8(0x203));
+        assert_eq!((*(&pentomino[&'F'])).shift_y(-1), BitGrid8(0x2030600));
+    }
+
+    #[test]
+    fn test_checked_shift_y() {
+        assert_eq!(FULL.checked_shift_y(1), None);
+        assert_eq!(FULL.checked_shift_y(-1), None);
+
+        let pentomino = BitGrid8::pentomino_map();
+        assert_eq!((*(&pentomino[&'F'])).checked_shift_y(-1), Some(BitGrid8(0x2030600)));
+        assert_eq!((*(&pentomino[&'F'])).checked_shift_y(1), None);
     }
 
     #[test]
