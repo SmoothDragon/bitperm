@@ -49,7 +49,7 @@ impl PieceBitGrid8 {
 
     /// Find the (x,y) bounding box of a piece shifted to origin
     fn bounding_box(grid: BitGrid8) -> (u32, u32) {
-        let mut shape = grid;
+        let mut shape:u64 = grid.0;
         // Collect ones on x and y axes
         shape |= ((shape >> 1) & 0x7f7f7f7f7f7f7f7f) | shape >> 8;
         shape |= ((shape >> 2) & 0x3f3f3f3f3f3f3f3f) | shape >> 16;
@@ -128,7 +128,7 @@ impl PieceBitGrid8 {
 
 impl fmt::Debug for PieceBitGrid8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "PieceBitGrid8({:#010x})", *self.bitgrid)
+        write!(f, "PieceBitGrid8({:#010x})", self.bitgrid.0)
     } 
 } 
 
@@ -138,7 +138,7 @@ impl fmt::Display for PieceBitGrid8 {
         write!(f, "{}",     
             (0..m*n)
             .map(|l| (l%m, l / m) )
-            .map(|(x,y)| format!("{}{}", if (*self.bitgrid >> (x+8*y)) & 0x1 == 1 { "#" } else { "." },
+            .map(|(x,y)| format!("{}{}", if (self.bitgrid.0 >> (x+8*y)) & 0x1 == 1 { "#" } else { "." },
                 if x+1 == m { "\n" } else { "" }))
             .collect::<String>()
             )
@@ -147,7 +147,7 @@ impl fmt::Display for PieceBitGrid8 {
 
 impl std::convert::From<BitGrid8> for PieceBitGrid8 {
     fn from(grid: BitGrid8) -> PieceBitGrid8 {
-        Self::new(*grid)
+        Self::new(grid.0)
     }
 }
 
@@ -202,9 +202,9 @@ mod test {
         let pentomino = BitGrid8::pentomino_map();
         assert_eq!(format!("{}", PieceBitGrid8::new(0x8040201008040201)), 
             "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
-        assert_eq!(format!("{}", PieceBitGrid8::new(*pentomino[&'U'])),
+        assert_eq!(format!("{}", PieceBitGrid8::from(pentomino[&'U'])),
             "#.#\n###\n");
-        assert_eq!(format!("{}", PieceBitGrid8::new(*pentomino[&'F'])),
+        assert_eq!(format!("{}", PieceBitGrid8::from(pentomino[&'F'])),
             ".##\n##.\n.#.\n");
         assert_eq!(format!("{}", PieceBitGrid8::new(0x8040201008040201)), 
             "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
@@ -215,30 +215,30 @@ mod test {
     #[test]
     fn test_new_pentomino() {
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!(PieceBitGrid8::new(*pentomino[&'F']).bitgrid, BitGrid8(0x20306));
-        assert_eq!(PieceBitGrid8::new(*(pentomino[&'F'] << 20)).bitgrid, BitGrid8(0x20306));
-        assert_eq!(PieceBitGrid8::new(*pentomino[&'F']).xy, (3, 3));
-        assert_eq!(PieceBitGrid8::new(*pentomino[&'I']).xy, (1, 5));
-        assert_eq!(PieceBitGrid8::new(*pentomino[&'L']).xy, (2, 4));
-        assert_eq!(PieceBitGrid8::new(*pentomino[&'U']).xy, (3, 2));
+        assert_eq!(PieceBitGrid8::from(pentomino[&'F']).bitgrid, BitGrid8(0x20306));
+        assert_eq!(PieceBitGrid8::from((pentomino[&'F'] << 20)).bitgrid, BitGrid8(0x20306));
+        assert_eq!(PieceBitGrid8::from(pentomino[&'F']).xy, (3, 3));
+        assert_eq!(PieceBitGrid8::from(pentomino[&'I']).xy, (1, 5));
+        assert_eq!(PieceBitGrid8::from(pentomino[&'L']).xy, (2, 4));
+        assert_eq!(PieceBitGrid8::from(pentomino[&'U']).xy, (3, 2));
     }
 
     #[test]
     fn test_rotate_cc() {
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!(PieceBitGrid8::new(*pentomino[&'U']).rotate_cc(),
+        assert_eq!(PieceBitGrid8::from(pentomino[&'U']).rotate_cc(),
             PieceBitGrid8::new(0x30203));
-        assert_eq!(PieceBitGrid8::new(*pentomino[&'X']).rotate_cc(),
-            PieceBitGrid8::new(*pentomino[&'X']));
+        assert_eq!(PieceBitGrid8::from(pentomino[&'X']).rotate_cc(),
+            PieceBitGrid8::from(pentomino[&'X']));
     }
 
     #[test]
     fn test_flip_x() {
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!(PieceBitGrid8::new(*pentomino[&'U']).flip_x(),
+        assert_eq!(PieceBitGrid8::from(pentomino[&'U']).flip_x(),
             PieceBitGrid8::new(0x507));
-        assert_eq!(PieceBitGrid8::new(*pentomino[&'X']).flip_x(),
-            PieceBitGrid8::new(*pentomino[&'X']));
+        assert_eq!(PieceBitGrid8::from(pentomino[&'X']).flip_x(),
+            PieceBitGrid8::from(pentomino[&'X']));
     }
 
     /*

@@ -7,6 +7,10 @@ use arrayvec::*;
 
 use crate::bitlib::swap_mask_shift_u64;
 
+fn print_type<T: std::fmt::Display>(x: &T) { 
+    println!("{} {:?}", x, std::any::type_name::<T>());
+}
+
 // -----------------------------------------------------------------
 // 2D geometric operations on an 8x8 grid
 // -----------------------------------------------------------------
@@ -33,7 +37,7 @@ impl core::ops::Shr<u32> for BitGrid8 {
     type Output = Self;
 
     fn shr(self, shift: u32) -> Self {
-        Self(self.unbounded_shr(shift))
+        Self(self.0.unbounded_shr(shift))
     }
 }
 
@@ -42,7 +46,7 @@ impl core::ops::Shl<u32> for BitGrid8 {
     type Output = Self;
 
     fn shl(self, shift: u32) -> Self {
-        Self(self.unbounded_shl(shift))
+        Self(self.0.unbounded_shl(shift))
     }
 }
 
@@ -106,21 +110,22 @@ pub const CHECKER2: BitGrid8 = BitGrid8(0x0c0c_0303);
 pub const IDENTITY:BitGrid8 = BitGrid8(0x8040201008040201);
 pub const ANTIDIAG:BitGrid8 = BitGrid8(0x0102040810204080);
 
-impl core::ops::Deref for BitGrid8 {
-    type Target = u64;
+// impl core::ops::Deref for BitGrid8 {
+    // type Target = u64;
 
-    fn deref(&self) -> &Self::Target {
-        &self.0
-    }
-}
+    // fn deref(&self) -> &Self::Target {
+        // &self.0
+    // }
+// }
 
 impl Iterator for BitGrid8 {
     type Item = Self;
 
     fn next(&mut self) -> Option<Self::Item> {
-        if **self != 0 {
-            let bit = self.isolate_least_significant_one();
-            *self ^= Self(bit);
+        let grid:u64 = self.0;
+        if grid != 0 {
+            let bit:u64 = grid.isolate_least_significant_one();
+            *self = Self(grid ^ bit);
             Some(Self(bit))
         } else {
             None
@@ -276,7 +281,7 @@ impl BitGrid8 {
     /// Find the (x,y) bounding box of a BitGrid8.
     /// The box includes the origin and all nonzero squares.
     pub fn bounding_box(self) -> (u8, u8) {
-        let mut shape = self;
+        let mut shape = self.0;
         // Collect ones on x and y axes
         shape |= ((shape >> 1) & 0x7f7f7f7f7f7f7f7f) | shape >> 8;
         shape |= ((shape >> 2) & 0x3f3f3f3f3f3f3f3f) | shape >> 16;
@@ -304,12 +309,41 @@ impl BitGrid8 {
     pub fn shift_x(self, shift: i32) -> Self { 
         if shift > 7 || shift < -7 { return Self(0) };
         if shift == 0 { return self };
-        if shift > 0 {
-            let shift: u32 = shift.try_into().unwrap();
-            (self << shift) & (((1 << (8-shift)) - 1) << shift)
+        let sign = shift > 0;
+        let shift: u32 = shift.unsigned_abs();
+        let mask: u64 = ((1_u64 << (8_u32-shift)) - 1_u64) * 0x0101_0101_0101_0101_u64;
+        if sign {
+            // BitGrid8((((1 << (8-shift)) - 1) << shift) * 0x0101_0101_0101_0101_u64) & (self.0.unbounded_shl(shift))
+            BitGrid8((mask & self.0).unbounded_shl(shift))
         } else {
-            let shift: u32 = (-shift).try_into().unwrap();
-            (self >> shift) & (((1 << (8-shift)) - 1))
+            BitGrid8(mask & self.0.unbounded_shr(shift))
+            // BitGrid8((((1 << (8-shift)) - 1) * 0x0101_0101_0101_0101_u64) & (self.0.unbounded_shr(shift))
+        }
+        /*
+        if shift > 0 {
+            let shift: u32 = shift.unsigned_abs();
+            // print_type(&shift);
+            // let mask = ((((1 << (8-shift)) - 1)) * 0x0101_0101_0101_0101_u64);
+            // print_type(&mask);
+            // BitGrid8(self.0.unbounded_shl(shift) & ((((1 << (8-shift)) - 1) << shift) * 0x0101_0101_0101_0101_u64))
+            // (self << shift) 
+            // BitGrid8(self.0.unbounded_shl(shift))
+            // BitGrid8(shift)
+            BitGrid8((((1 << (8-shift)) - 1) << shift) * 0x0101_0101_0101_0101_u64) & (self.0.unbounded_shl(shift))
+        } else {
+            let shift: u32 = shift.unsigned_abs();
+            (self >> shift) & ((((1 << (8-shift)) - 1)) * 0x0101_0101_0101_0101_u64)
+        }
+        */
+    }
+
+    /// Verifies that the x_shift does not cross the boundary edges
+    pub fn checked_shift_x(self, shift: i32) -> Option<Self> { 
+        let shifted = self.shift_x(shift);
+        if self.0.count_ones() == shifted.0.count_ones() {
+            Some(shifted)
+        } else {
+            None
         }
     }
 
@@ -397,6 +431,29 @@ mod test {
 
         let pentomino = BitGrid8::pentomino_map();
         assert_eq!((*(&pentomino[&'F']) << 24).shift_to_origin(), pentomino[&'F']);
+    }
+
+    #[test]
+    fn test_shift_x() {
+        assert_eq!(FULL.shift_x(1), BitGrid8(0xfefe_fefe_fefe_fefe_u64));
+        assert_eq!(FULL.shift_x(4), BitGrid8(0xf0f0_f0f0_f0f0_f0f0_u64));
+        assert_eq!(FULL.shift_x(-1), BitGrid8(0x7f7f_7f7f_7f7f_7f7f_u64));
+        assert_eq!(FULL.shift_x(-4), BitGrid8(0x0f0f_0f0f_0f0f_0f0f_u64));
+        assert_eq!(FULL.shift_x(-8), BitGrid8(0));
+        assert_eq!(FULL.shift_x(8), BitGrid8(0));
+
+        let pentomino = BitGrid8::pentomino_map();
+        assert_eq!((*(&pentomino[&'F'])).shift_x(1), BitGrid8(0x4060c));
+        assert_eq!((*(&pentomino[&'F'])).shift_x(-1), BitGrid8(0x10103));
+    }
+
+    #[test]
+    fn test_checked_shift_x() {
+        assert_eq!(FULL.checked_shift_x(1), None);
+
+        let pentomino = BitGrid8::pentomino_map();
+        assert_eq!((*(&pentomino[&'F'])).checked_shift_x(1), Some(BitGrid8(0x4060c)));
+        assert_eq!((*(&pentomino[&'F'])).checked_shift_x(-1), None);
     }
 
     #[test]
