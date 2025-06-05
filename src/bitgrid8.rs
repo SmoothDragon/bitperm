@@ -318,11 +318,9 @@ impl BitGrid8 {
         let shift: u32 = shift.unsigned_abs();
         let mask: u64 = ((1_u64 << (8_u32-shift)) - 1_u64) * 0x0101_0101_0101_0101_u64;
         if sign {
-            // BitGrid8((((1 << (8-shift)) - 1) << shift) * 0x0101_0101_0101_0101_u64) & (self.0.unbounded_shl(shift))
             BitGrid8((mask & self.0).unbounded_shl(shift))
         } else {
             BitGrid8(mask & self.0.unbounded_shr(shift))
-            // BitGrid8((((1 << (8-shift)) - 1) * 0x0101_0101_0101_0101_u64) & (self.0.unbounded_shr(shift))
         }
     }
 
@@ -354,6 +352,24 @@ impl BitGrid8 {
     /// Verifies that the x_shift does not cross the boundary edges
     pub fn checked_shift_y(self, shift: i32) -> Option<Self> { 
         let shifted = self.shift_y(shift);
+        if self.0.count_ones() == shifted.0.count_ones() {
+            Some(shifted)
+        } else {
+            None
+        }
+    }
+
+    /// Shifts off the side are lost.
+    /// The low three bits of shift are the x-shift, and the high three the y-shift.
+    /// Low six bits of shift = y2 y2 y0 x2 x1 x0
+    /// Only 
+    pub fn shift_xy(self, x_shift: i32, y_shift: i32) -> Self { 
+        self.shift_x(x_shift).shift_y(y_shift)
+    }
+
+    /// Verifies that the x_shift does not cross the boundary edges
+    pub fn checked_shift_xy(self, x_shift: i32, y_shift: i32) -> Option<Self> { 
+        let shifted = self.shift_xy(x_shift, y_shift);
         if self.0.count_ones() == shifted.0.count_ones() {
             Some(shifted)
         } else {
@@ -450,6 +466,32 @@ mod test {
         let pentomino = BitGrid8::pentomino_map();
         assert_eq!((*(&pentomino[&'F'])).checked_shift_y(1), Some(BitGrid8(0x2030600)));
         assert_eq!((*(&pentomino[&'F'])).checked_shift_y(-1), None);
+    }
+
+    #[test]
+    fn test_shift_xy() {
+        assert_eq!(FULL.shift_xy(1,-1), BitGrid8(0x00fe_fefe_fefe_fefe_u64));
+        // assert_eq!(FULL.shift_xy(-1), BitGrid8(0xffff_ffff_ffff_ff00_u64));
+        // assert_eq!(FULL.shift_xy(4), BitGrid8(0x0000_0000_ffff_ffff_u64));
+        // assert_eq!(FULL.shift_xy(-4), BitGrid8(0xffff_ffff_0000_0000_u64));
+        // assert_eq!(FULL.shift_xy(-8), BitGrid8(0));
+        // assert_eq!(FULL.shift_xy(8), BitGrid8(0));
+
+        // let pentomino = BitGrid8::pentomino_map();
+        // assert_eq!((*(&pentomino[&'F'])).shift_y(1), BitGrid8(0x203));
+        // assert_eq!((*(&pentomino[&'F'])).shift_y(-1), BitGrid8(0x2030600));
+    }
+
+    #[test]
+    fn test_checked_shift_xy() {
+        assert_eq!(FULL.checked_shift_xy(1,1), None);
+        assert_eq!(FULL.checked_shift_xy(-1,-1), None);
+
+        let pentomino = BitGrid8::pentomino_map();
+        assert_eq!((*(&pentomino[&'F'])).checked_shift_xy(1,1), Some(BitGrid8(0x4060c00)));
+        assert_eq!((*(&pentomino[&'F'])).checked_shift_xy(1,-1), None);
+        assert_eq!((*(&pentomino[&'F'])).checked_shift_xy(-1,1), None);
+        assert_eq!((*(&pentomino[&'F'])).checked_shift_xy(-1,-1), None);
     }
 
     #[test]
