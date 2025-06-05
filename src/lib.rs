@@ -26,3 +26,6 @@ pub use crate::bitgrid8::*;
 
 mod piece_bitgrid8;
 pub use crate::piece_bitgrid8::*;
+
+mod bitmatrix8;
+pub use crate::bitmatrix8::*;
