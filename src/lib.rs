@@ -2,6 +2,11 @@
 #![feature(slice_partition_dedup)]
 #![feature(isolate_most_least_significant_one)]
 
+#[allow(dead_code)]
+fn print_type<T: std::fmt::Display>(x: &T) { 
+    println!("{} {:?}", x, std::any::type_name::<T>());
+}
+
 
 mod bitlib;
 pub use crate::bitlib::*;

@@ -7,52 +7,21 @@ use arrayvec::*;
 
 use crate::bitlib::swap_mask_shift_u64;
 
-fn print_type<T: std::fmt::Display>(x: &T) { 
-    println!("{} {:?}", x, std::any::type_name::<T>());
-}
-
 // -----------------------------------------------------------------
 // 2D geometric operations on an 8x8 grid
 // -----------------------------------------------------------------
 
 // -----------------------------------------------------------------
-// 8x8 square space represented by the 64 bits in a u64
+// 8x8 bit matrix represented by the 64 bits in a u64
 // -----------------------------------------------------------------
-// Position at (x,y) = x + 8*y
-// The low bit corresponds to the upper left most position.
-// The high bit corresponds to the lower right most position.
-// Rotations will happen from the center of the square.
-//
-// The operators >> and << implement unbounded_shr() and unbounded_shl(),
-// so they may be used safely.
-
-
-// TODO: It seems like we would shift the border box over the designated square in all possible
-// ways. For each of these ways, test that the piece in the box overlaps, that the shift is valid,
-// that it doesn't overlap with the filled portion.
+// Entry at row y, column x is at position at (x,y) = x + 8*y
+// The low bit corresponds to the upper left of the matrix.
+// The high bit corresponds to the lower right of the matrix.
 
 #[derive(Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord,
     BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, 
     )]
 pub struct BitMatrix8(pub u64);
-
-/// Let BitMatrix8 use >> operator in the safe manner of unbounded_shr()
-impl core::ops::Shr<u32> for BitMatrix8 {
-    type Output = Self;
-
-    fn shr(self, shift: u32) -> Self {
-        Self(self.0.unbounded_shr(shift))
-    }
-}
-
-/// Let BitMatrix8 use << operator in the safe manner of unbounded_shl()
-impl core::ops::Shl<u32> for BitMatrix8 {
-    type Output = Self;
-
-    fn shl(self, shift: u32) -> Self {
-        Self(self.0.unbounded_shl(shift))
-    }
-}
 
 /// Define BitAnd with u64 for BitMatrix8
 impl core::ops::BitAnd<u64> for BitMatrix8 {
@@ -96,24 +65,6 @@ impl fmt::Display for BitMatrix8 {
         // output
     } 
 } 
-
-const REP_01:u64 = 0x0101010101010101u64;
-const REP_7F:u64 = 0x7f7f7f7f7f7f7f7fu64;
-pub const ALL: u64 = 0xffff_ffff_ffff_ffff;
-pub const CENTER_XY: BitMatrix8 = BitMatrix8(0x1818_18ff_ff18_1818);
-pub const FULL: BitMatrix8 = BitMatrix8(0xffff_ffff_ffff_ffff_u64);
-pub const ORDER: BitMatrix8 = BitMatrix8(0xfedc_ba98_7654_3210_u64);
-pub const UPPER_LEFT: BitMatrix8 = BitMatrix8(0x0f0f_0f0f_u64);
-pub const UPPER_RIGHT: BitMatrix8 = BitMatrix8(0xf0f0_f0f0_u64);
-pub const LOWER_LEFT: BitMatrix8 = BitMatrix8(0x0f0f_0f0f_0000_0000_u64);
-pub const LOWER_RIGHT: BitMatrix8 = BitMatrix8(0xf0f0_f0f0_0000_0000_u64);
-
-pub const HIGHFIVE: BitMatrix8 = BitMatrix8(0xff80ff01ff);
-pub const SMALL_FIVE: BitMatrix8 = BitMatrix8(0x00f080f010f);
-pub const CHECKER2: BitMatrix8 = BitMatrix8(0x0c0c_0303);
-pub const IDENTITY:BitMatrix8 = BitMatrix8(0x8040201008040201);
-pub const ANTIDIAG:BitMatrix8 = BitMatrix8(0x0102040810204080);
-pub const BORDER:BitMatrix8 = BitMatrix8(0xff81_8181_8181_81ff);
 
 // impl core::ops::Deref for BitMatrix8 {
     // type Target = u64;
@@ -181,11 +132,6 @@ impl BitMatrix8 {
         let symmetries = vec.partition_dedup().0.len();  // Move duplicates to the end.
         vec.truncate(symmetries);
         vec
-    }
-
-    /// Return the border of a BitMatrix8. This includes the border of the 8x8 square.
-    pub fn border(self) -> Self {
-        (self | self.shift_x(1) | self.shift_x(-1) | self.shift_y(1) | self.shift_y(-1) | BORDER) ^ self
     }
 
     /// Produce all rotations and reflections of a BitGrid object translated towards origin.
@@ -407,12 +353,12 @@ impl BitMatrix8 {
         let mut pivot;
         println!("{}", Self(m));
         while m != 0 {
-            pivot = m & REP_01;
+            pivot = m & ma64::REP_01;
             if pivot != 0 {
                 r += 1;
                 m ^= (m.unbounded_shr(pivot.trailing_zeros()) & 0xff) * pivot;
             }
-            m = m.unbounded_shr(1) & REP_7F;
+            m = m.unbounded_shr(1) & ma64::REP_7F;
             println!("{}", Self(m));
         }
         r
@@ -420,6 +366,27 @@ impl BitMatrix8 {
 
 }
 
+pub mod ma64 {
+    use super::*;
+
+    pub const REP_01:u64 = 0x0101010101010101u64;
+    pub const REP_7F:u64 = 0x7f7f7f7f7f7f7f7fu64;
+    // pub const ALL: u64 = 0xffff_ffff_ffff_ffff;
+    pub const CENTER_XY: BitMatrix8 = BitMatrix8(0x1818_18ff_ff18_1818);
+    pub const FULL: BitMatrix8 = BitMatrix8(0xffff_ffff_ffff_ffff_u64);
+    // pub const ORDER: BitMatrix8 = BitMatrix8(0xfedc_ba98_7654_3210_u64);
+    pub const UPPER_LEFT: BitMatrix8 = BitMatrix8(0x0f0f_0f0f_u64);
+    pub const UPPER_RIGHT: BitMatrix8 = BitMatrix8(0xf0f0_f0f0_u64);
+    pub const LOWER_LEFT: BitMatrix8 = BitMatrix8(0x0f0f_0f0f_0000_0000_u64);
+    pub const LOWER_RIGHT: BitMatrix8 = BitMatrix8(0xf0f0_f0f0_0000_0000_u64);
+
+    pub const HIGHFIVE: BitMatrix8 = BitMatrix8(0xff80ff01ff);
+    pub const SMALL_FIVE: BitMatrix8 = BitMatrix8(0x00f080f010f);
+    pub const CHECKER2: BitMatrix8 = BitMatrix8(0x0c0c_0303);
+    pub const IDENTITY:BitMatrix8 = BitMatrix8(0x8040201008040201);
+    pub const ANTIDIAG:BitMatrix8 = BitMatrix8(0x0102040810204080);
+    // pub const BORDER:BitMatrix8 = BitMatrix8(0xff81_8181_8181_81ff);
+}
 
 #[cfg(test)]
 mod test {
@@ -428,7 +395,7 @@ mod test {
 
     #[test]
     fn test_rank() {
-        assert_eq!(IDENTITY.rank(), 8);
+        assert_eq!(ma64::IDENTITY.rank(), 8);
         assert_eq!(BitMatrix8(0xfedcba9876543210u64).rank(), 4);
     }
 
@@ -441,121 +408,21 @@ mod test {
     }
 
     #[test]
-    fn test_shift_to_origin() {
-        assert_eq!(FULL.shift_to_origin(), FULL);
-        assert_eq!(UPPER_RIGHT.shift_to_origin(), UPPER_LEFT);
-        assert_eq!(ANTIDIAG.shift_to_origin(), ANTIDIAG);
-        assert_eq!(CENTER_XY.shift_to_origin(), CENTER_XY);
-        assert_eq!(BitMatrix8(0xf00f00).shift_to_origin(), BitMatrix8(0xf00f));
-
-        let pentomino = BitMatrix8::pentomino_map();
-        assert_eq!((*(&pentomino[&'F']) << 24).shift_to_origin(), pentomino[&'F']);
-    }
-
-    #[test]
-    fn test_shift_x() {
-        assert_eq!(FULL.shift_x(1), BitMatrix8(0xfefe_fefe_fefe_fefe_u64));
-        assert_eq!(FULL.shift_x(4), BitMatrix8(0xf0f0_f0f0_f0f0_f0f0_u64));
-        assert_eq!(FULL.shift_x(-1), BitMatrix8(0x7f7f_7f7f_7f7f_7f7f_u64));
-        assert_eq!(FULL.shift_x(-4), BitMatrix8(0x0f0f_0f0f_0f0f_0f0f_u64));
-        assert_eq!(FULL.shift_x(-8), BitMatrix8(0));
-        assert_eq!(FULL.shift_x(8), BitMatrix8(0));
-
-        let pentomino = BitMatrix8::pentomino_map();
-        assert_eq!((*(&pentomino[&'F'])).shift_x(1), BitMatrix8(0x4060c));
-        assert_eq!((*(&pentomino[&'F'])).shift_x(-1), BitMatrix8(0x10103));
-    }
-
-    #[test]
-    fn test_checked_shift_x() {
-        assert_eq!(FULL.checked_shift_x(1), None);
-        assert_eq!(FULL.checked_shift_x(-1), None);
-
-        let pentomino = BitMatrix8::pentomino_map();
-        assert_eq!((*(&pentomino[&'F'])).checked_shift_x(1), Some(BitMatrix8(0x4060c)));
-        assert_eq!((*(&pentomino[&'F'])).checked_shift_x(-1), None);
-    }
-
-    #[test]
-    fn test_shift_y() {
-        assert_eq!(FULL.shift_y(1), BitMatrix8(0x00ff_ffff_ffff_ffff_u64));
-        assert_eq!(FULL.shift_y(-1), BitMatrix8(0xffff_ffff_ffff_ff00_u64));
-        assert_eq!(FULL.shift_y(4), BitMatrix8(0x0000_0000_ffff_ffff_u64));
-        assert_eq!(FULL.shift_y(-4), BitMatrix8(0xffff_ffff_0000_0000_u64));
-        assert_eq!(FULL.shift_y(-8), BitMatrix8(0));
-        assert_eq!(FULL.shift_y(8), BitMatrix8(0));
-
-        let pentomino = BitMatrix8::pentomino_map();
-        assert_eq!((*(&pentomino[&'F'])).shift_y(1), BitMatrix8(0x203));
-        assert_eq!((*(&pentomino[&'F'])).shift_y(-1), BitMatrix8(0x2030600));
-    }
-
-    #[test]
-    fn test_checked_shift_y() {
-        assert_eq!(FULL.checked_shift_y(1), None);
-        assert_eq!(FULL.checked_shift_y(-1), None);
-
-        let pentomino = BitMatrix8::pentomino_map();
-        assert_eq!((*(&pentomino[&'F'])).checked_shift_y(-1), Some(BitMatrix8(0x2030600)));
-        assert_eq!((*(&pentomino[&'F'])).checked_shift_y(1), None);
-    }
-
-    #[test]
-    fn test_bounding_box() {
-        assert_eq!(FULL.bounding_box(), (8,8));
-        assert_eq!(UPPER_LEFT.bounding_box(), (4,4));
-        assert_eq!(ANTIDIAG.bounding_box(), (8,8));
-        assert_eq!(HIGHFIVE.bounding_box(), (8,5));
-        assert_eq!(SMALL_FIVE.bounding_box(), (4,5));
-        assert_eq!(BitMatrix8(0).bounding_box(), (0,0));
-        assert_eq!(BitMatrix8(1).bounding_box(), (1,1));
-    }
-
-    #[test]
-    fn test_bitmatrix8_iterator() {
-        let pentomino = BitMatrix8::pentomino_map();
-        let pent_i = pentomino[&'I'];
-        assert_eq!(pent_i.into_iter().collect::<Vec<_>>(), [BitMatrix8(0x00000001), BitMatrix8(0x00000100), BitMatrix8(0x00010000), BitMatrix8(0x01000000), BitMatrix8(0x100000000)]);
-        assert_eq!(pent_i.rotate().into_iter().collect::<Vec<_>>(), [BitMatrix8(0x00000008), BitMatrix8(0x00000010), BitMatrix8(0x00000020), BitMatrix8(0x00000040), BitMatrix8(0x00000080)]);
-    }
-
-    
-    #[test]
-    fn test_bounding_box_pentomino() {
-        let pentomino = BitMatrix8::pentomino_map();
-        assert_eq!((&pentomino[&'F']).bounding_box(), (3,3));
-        assert_eq!((&pentomino[&'I']).bounding_box(), (1,5));
-        assert_eq!((&pentomino[&'L']).bounding_box(), (2,4));
-        assert_eq!((&pentomino[&'P']).bounding_box(), (2,3));
-        assert_eq!((&pentomino[&'W']).bounding_box(), (3,3));
-    }
-
-    
-    // #[test]
-    // fn test_origin_bounded_shift() {
-        // assert_eq!(FULL.origin_bounded_shifts().len(), 1);
-        // assert_eq!(UPPER_LEFT.origin_bounded_shifts().len(), 25);
-        // assert_eq!(ANTIDIAG.origin_bounded_shifts().len(), 1);
-        // assert_eq!(HIGHFIVE.origin_bounded_shifts().len(), 4);
-        // assert_eq!(SMALL_FIVE.origin_bounded_shifts().len(), 20);
-    // }
-
-    #[test]
     fn test_rotate() {
-        assert_eq!(BitMatrix8(0x171515151515151d).rotate(), HIGHFIVE);
-        assert_eq!(BitMatrix8(0x1715151d00000000).rotate(), SMALL_FIVE);
-        assert_eq!(FULL.rotate(), FULL);
-        assert_eq!(UPPER_LEFT, LOWER_LEFT.rotate());
-        assert_eq!(ANTIDIAG, IDENTITY.rotate());
+        assert_eq!(BitMatrix8(0x171515151515151d).rotate(), ma64::HIGHFIVE);
+        assert_eq!(BitMatrix8(0x1715151d00000000).rotate(), ma64::SMALL_FIVE);
+        assert_eq!(ma64::FULL.rotate(), ma64::FULL);
+        assert_eq!(ma64::UPPER_LEFT, ma64::LOWER_LEFT.rotate());
+        assert_eq!(ma64::ANTIDIAG, ma64::IDENTITY.rotate());
     }
 
     #[test]
     fn test_rotate_cc() {
-        assert_eq!(HIGHFIVE.rotate_cc(), BitMatrix8(0x171515151515151d));
-        assert_eq!(SMALL_FIVE.rotate_cc(), BitMatrix8(0x1715151d00000000));
-        assert_eq!(ANTIDIAG, IDENTITY.rotate_cc());
-        assert_eq!(FULL.rotate_cc(), FULL);
-        assert_eq!(UPPER_LEFT.rotate_cc(), LOWER_LEFT);
+        assert_eq!(ma64::HIGHFIVE.rotate_cc(), BitMatrix8(0x171515151515151d));
+        assert_eq!(ma64::SMALL_FIVE.rotate_cc(), BitMatrix8(0x1715151d00000000));
+        assert_eq!(ma64::ANTIDIAG, ma64::IDENTITY.rotate_cc());
+        assert_eq!(ma64::FULL.rotate_cc(), ma64::FULL);
+        assert_eq!(ma64::UPPER_LEFT.rotate_cc(), ma64::LOWER_LEFT);
     }
 
     #[test]
@@ -566,36 +433,36 @@ mod test {
 
     #[test]
     fn test_flipx() {
-        // assert_eq!(SMALL_FIVE.rotate_cc(), BitMatrix8(0x1715151d00000000));
-        assert_eq!(ANTIDIAG, IDENTITY.flip_x());
-        assert_eq!(FULL.flip_x(), FULL);
-        assert_eq!(UPPER_LEFT.flip_x(), LOWER_LEFT);
-        assert_eq!(HIGHFIVE.flip_x(), BitMatrix8(0xff01_ff80_ff00_0000));
+        // assert_eq!(ma64::SMALL_FIVE.rotate_cc(), BitMatrix8(0x1715151d00000000));
+        assert_eq!(ma64::ANTIDIAG, ma64::IDENTITY.flip_x());
+        assert_eq!(ma64::FULL.flip_x(), ma64::FULL);
+        assert_eq!(ma64::UPPER_LEFT.flip_x(), ma64::LOWER_LEFT);
+        assert_eq!(ma64::HIGHFIVE.flip_x(), BitMatrix8(0xff01_ff80_ff00_0000));
     }
 
     #[test]
     fn test_rotate_all_vec() {
-        assert_eq!(BitMatrix8::rotate_all_vec(CENTER_XY).as_slice(), &[CENTER_XY]);
-        assert_eq!(BitMatrix8::rotate_all_vec(UPPER_LEFT).as_slice(), &[UPPER_LEFT, UPPER_RIGHT, LOWER_LEFT, LOWER_RIGHT]);
-        assert_eq!(BitMatrix8::rotate_all_vec(IDENTITY).len(), 2);
-        assert_eq!(BitMatrix8::rotate_all_vec(CHECKER2).len(), 4);
+        assert_eq!(BitMatrix8::rotate_all_vec(ma64::CENTER_XY).as_slice(), &[ma64::CENTER_XY]);
+        assert_eq!(BitMatrix8::rotate_all_vec(ma64::UPPER_LEFT).as_slice(), &[ma64::UPPER_LEFT, ma64::UPPER_RIGHT, ma64::LOWER_LEFT, ma64::LOWER_RIGHT]);
+        assert_eq!(BitMatrix8::rotate_all_vec(ma64::IDENTITY).len(), 2);
+        assert_eq!(BitMatrix8::rotate_all_vec(ma64::CHECKER2).len(), 4);
     }
 
     #[test]
     fn test_origin_rotate_all() {
-        assert_eq!(BitMatrix8::origin_rotate_all(CENTER_XY).as_slice(), &[CENTER_XY]);
-        assert_eq!(BitMatrix8::origin_rotate_all(UPPER_LEFT).len(), 1);
-        assert_eq!(BitMatrix8::origin_rotate_all(HIGHFIVE).len(), 2);
-        assert_eq!(BitMatrix8::origin_rotate_all(CHECKER2).len(), 2);
+        assert_eq!(BitMatrix8::origin_rotate_all(ma64::CENTER_XY).as_slice(), &[ma64::CENTER_XY]);
+        assert_eq!(BitMatrix8::origin_rotate_all(ma64::UPPER_LEFT).len(), 1);
+        assert_eq!(BitMatrix8::origin_rotate_all(ma64::HIGHFIVE).len(), 2);
+        assert_eq!(BitMatrix8::origin_rotate_all(ma64::CHECKER2).len(), 2);
         assert_eq!(BitMatrix8::origin_rotate_all(BitMatrix8(0x103)).len(), 4);
     }
 
     #[test]
     fn test_origin_dihedral_all() {
-        assert_eq!(BitMatrix8::origin_dihedral_all(CENTER_XY).as_slice(), &[CENTER_XY]);
-        assert_eq!(BitMatrix8::origin_dihedral_all(UPPER_LEFT).len(), 1);
-        assert_eq!(BitMatrix8::origin_dihedral_all(HIGHFIVE).len(), 4);
-        assert_eq!(BitMatrix8::origin_dihedral_all(CHECKER2).len(), 2);
+        assert_eq!(BitMatrix8::origin_dihedral_all(ma64::CENTER_XY).as_slice(), &[ma64::CENTER_XY]);
+        assert_eq!(BitMatrix8::origin_dihedral_all(ma64::UPPER_LEFT).len(), 1);
+        assert_eq!(BitMatrix8::origin_dihedral_all(ma64::HIGHFIVE).len(), 4);
+        assert_eq!(BitMatrix8::origin_dihedral_all(ma64::CHECKER2).len(), 2);
         assert_eq!(BitMatrix8::origin_dihedral_all(BitMatrix8(0x103)).len(), 4);
     }
 

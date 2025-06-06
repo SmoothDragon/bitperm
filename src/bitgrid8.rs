@@ -7,10 +7,6 @@ use arrayvec::*;
 
 use crate::bitlib::swap_mask_shift_u64;
 
-fn print_type<T: std::fmt::Display>(x: &T) { 
-    println!("{} {:?}", x, std::any::type_name::<T>());
-}
-
 // -----------------------------------------------------------------
 // 2D geometric operations on an 8x8 grid
 // -----------------------------------------------------------------
@@ -19,8 +15,8 @@ fn print_type<T: std::fmt::Display>(x: &T) {
 // 8x8 square space represented by the 64 bits in a u64
 // -----------------------------------------------------------------
 // Position at (x,y) = x + 8*y
-// The low bit corresponds to the upper left most position.
-// The high bit corresponds to the lower right most position.
+// The low bit corresponds to the lower left most position.
+// The high bit corresponds to the upper right most position.
 // Rotations will happen from the center of the square.
 //
 // The operators >> and << implement unbounded_shr() and unbounded_shl(),
@@ -36,21 +32,33 @@ fn print_type<T: std::fmt::Display>(x: &T) {
     )]
 pub struct BitGrid8(pub u64);
 
-/// Let BitGrid8 use >> operator in the safe manner of unbounded_shr()
-impl core::ops::Shr<u32> for BitGrid8 {
+/// Let BitGrid8 use >> operator safely with i32 like Julia
+impl core::ops::Shr<i32> for BitGrid8 {
     type Output = Self;
 
-    fn shr(self, shift: u32) -> Self {
-        Self(self.0.unbounded_shr(shift))
+    fn shr(self, shift: i32) -> Self {
+        let positive = shift >= 0;
+        let shift: u32 = shift.unsigned_abs();
+        if positive {
+            Self(self.0.unbounded_shr(shift))
+        } else {
+            Self(self.0.unbounded_shl(shift))
+        }
     }
 }
 
-/// Let BitGrid8 use << operator in the safe manner of unbounded_shl()
-impl core::ops::Shl<u32> for BitGrid8 {
+/// Let BitGrid8 use << operator safely with i32 like Julia
+impl core::ops::Shl<i32> for BitGrid8 {
     type Output = Self;
 
-    fn shl(self, shift: u32) -> Self {
-        Self(self.0.unbounded_shl(shift))
+    fn shl(self, shift: i32) -> Self {
+        let positive = shift >= 0;
+        let shift: u32 = shift.unsigned_abs();
+        if positive {
+            Self(self.0.unbounded_shl(shift))
+        } else {
+            Self(self.0.unbounded_shr(shift))
+        }
     }
 }
 
@@ -91,8 +99,6 @@ impl fmt::Display for BitGrid8 {
     } 
 } 
 
-const REP_01:u64 = 0x0101010101010101u64;
-const REP_7F:u64 = 0x7f7f7f7f7f7f7f7fu64;
 pub const ALL: u64 = 0xffff_ffff_ffff_ffff;
 pub const CENTER_XY: BitGrid8 = BitGrid8(0x1818_18ff_ff18_1818);
 pub const FULL: BitGrid8 = BitGrid8(0xffff_ffff_ffff_ffff_u64);
@@ -108,6 +114,8 @@ pub const CHECKER2: BitGrid8 = BitGrid8(0x0c0c_0303);
 pub const SLASH:BitGrid8 = BitGrid8(0x8040201008040201);
 pub const BACKSLASH:BitGrid8 = BitGrid8(0x0102040810204080);
 pub const BORDER:BitGrid8 = BitGrid8(0xff81_8181_8181_81ff);
+pub const IDENTITY:BitGrid8 = BitGrid8(0x8040201008040201);
+pub const ANTIDIAG:BitGrid8 = BitGrid8(0x0102040810204080);
 
 // Beware using automatic deref
 // impl core::ops::Deref for BitGrid8 {
@@ -132,15 +140,6 @@ impl Iterator for BitGrid8 {
         }
     }
 }
-
-    // pub gen fn positions(self) -> impl Iterator<Item = u64> {
-        // let mut grid = *self;
-        // while grid != 0 {
-            // bit = grid.isolate_least_significant_one();
-            // grid ^= bit;
-            // yield bit;
-        // }
-    // }
 
 
 impl BitGrid8 {
@@ -218,7 +217,7 @@ impl BitGrid8 {
     /// is copied in the other dimension.
     /// 23 32 31
     /// 01 10 20
-    pub fn rotate(self) -> Self { 
+    pub fn rotate_cc(self) -> Self { 
         let mut square = self.0;
         // Swap diagonal 4x4 squares
         swap_mask_shift_u64(&mut square, 0x0f0f_0f0f_u64, 36);
@@ -240,7 +239,7 @@ impl BitGrid8 {
     /// is copied in the other dimension.
     /// 23 32 31
     /// 01 10 20
-    pub fn rotate_cc(self) -> Self { 
+    pub fn rotate(self) -> Self { 
         let mut square = self.0;
         // Swap 4x4 squares top <-> bottom
         swap_mask_shift_u64(&mut square, 0xffff_ffff_u64, 32);
@@ -295,20 +294,6 @@ impl BitGrid8 {
         let len_y = (shape & 0x0101010101010101).count_ones();
         (len_x as u32, len_y as u32)
     }
-
-    /* TODO: should the shifts be by xx,yy instead of x,y?
-    /// Find the (x,y) shifts piece shifted to origin
-    pub fn origin_bounded_shifts(self) -> Vec<Self> {
-        let mut shapes = Vec::<Self>::new();
-        let (x,y) = self.origin_bounding_box();
-        for xx in 0..(9-x) {
-            for yy in 0..(9-y) {
-                shapes.push(Self(self.0.unbounded_shl(x + 8*y)));
-            }
-        }
-        shapes
-    }
-    */
 
     /// Shifts off the side are lost.
     pub fn shift_x(self, shift: i32) -> Self { 
@@ -495,17 +480,6 @@ mod test {
     }
 
     #[test]
-    fn test_bounding_box() {
-        assert_eq!(FULL.bounding_box(), (8,8));
-        assert_eq!(UPPER_LEFT.bounding_box(), (4,4));
-        assert_eq!(BACKSLASH.bounding_box(), (8,8));
-        assert_eq!(HIGHFIVE.bounding_box(), (8,5));
-        assert_eq!(SMALL_FIVE.bounding_box(), (4,5));
-        assert_eq!(BitGrid8(0).bounding_box(), (0,0));
-        assert_eq!(BitGrid8(1).bounding_box(), (1,1));
-    }
-
-    #[test]
     fn test_bitgrid8_iterator() {
         let pentomino = BitGrid8::pentomino_map();
         let pent_i_points = pentomino[&'I'].into_iter();
@@ -513,7 +487,7 @@ mod test {
         // Do it again to make sure iterator isn't consumed
         assert_eq!(pent_i_points.collect::<Vec<_>>(), [BitGrid8(0x00000001), BitGrid8(0x00000100), BitGrid8(0x00010000), BitGrid8(0x01000000), BitGrid8(0x100000000)]);
 
-        let pent_i_points_rotate = pentomino[&'I'].rotate().into_iter();
+        let pent_i_points_rotate = pentomino[&'I'].rotate_cc().into_iter();
         assert_eq!(pent_i_points_rotate.collect::<Vec<_>>(), [BitGrid8(0x00000008), BitGrid8(0x00000010), BitGrid8(0x00000020), BitGrid8(0x00000040), BitGrid8(0x00000080)]);
         // Do it again to make sure iterator isn't consumed
         assert_eq!(pent_i_points_rotate.collect::<Vec<_>>(), [BitGrid8(0x00000008), BitGrid8(0x00000010), BitGrid8(0x00000020), BitGrid8(0x00000040), BitGrid8(0x00000080)]);
@@ -530,6 +504,36 @@ mod test {
         assert_eq!((&pentomino[&'W']).bounding_box(), (3,3));
     }
 
+    #[test]
+    fn test_bounding_box() {
+        assert_eq!(FULL.bounding_box(), (8,8));
+        assert_eq!(UPPER_LEFT.bounding_box(), (4,4));
+        assert_eq!(BACKSLASH.bounding_box(), (8,8));
+        assert_eq!(HIGHFIVE.bounding_box(), (8,5));
+        assert_eq!(SMALL_FIVE.bounding_box(), (4,5));
+        assert_eq!(BitGrid8(0).bounding_box(), (0,0));
+        assert_eq!(BitGrid8(1).bounding_box(), (1,1));
+    }
+
+    #[test]
+    fn test_origin_bounding_box_pentomino() {
+        let pentomino = BitGrid8::pentomino_map();
+        assert_eq!((&pentomino[&'F']).bounding_box(), (3,3));
+        assert_eq!((&pentomino[&'I']).bounding_box(), (1,5));
+        assert_eq!((&pentomino[&'L']).bounding_box(), (2,4));
+        assert_eq!((&pentomino[&'P']).bounding_box(), (2,3));
+        assert_eq!((&pentomino[&'W']).bounding_box(), (3,3));
+    }
+
+    // #[test]
+    // fn test_origin_bounded_shift() {
+        // assert_eq!(FULL.origin_bounded_shifts().len(), 1);
+        // assert_eq!(UPPER_LEFT.origin_bounded_shifts().len(), 25);
+        // assert_eq!(ANTIDIAG.origin_bounded_shifts().len(), 1);
+        // assert_eq!(HIGHFIVE.origin_bounded_shifts().len(), 4);
+        // assert_eq!(SMALL_FIVE.origin_bounded_shifts().len(), 20);
+    // }
+
     
     // #[test]
     // fn test_origin_bounded_shift() {
@@ -541,21 +545,21 @@ mod test {
     // }
 
     #[test]
-    fn test_rotate() {
-        assert_eq!(BitGrid8(0x171515151515151d).rotate(), HIGHFIVE);
-        assert_eq!(BitGrid8(0x1715151d00000000).rotate(), SMALL_FIVE);
-        assert_eq!(FULL.rotate(), FULL);
-        assert_eq!(UPPER_LEFT, LOWER_LEFT.rotate());
-        assert_eq!(BACKSLASH, SLASH.rotate());
+    fn test_rotate_cc() {
+        assert_eq!(BitGrid8(0x171515151515151d).rotate_cc(), HIGHFIVE);
+        assert_eq!(BitGrid8(0x1715151d00000000).rotate_cc(), SMALL_FIVE);
+        assert_eq!(FULL.rotate_cc(), FULL);
+        assert_eq!(UPPER_LEFT, LOWER_LEFT.rotate_cc());
+        assert_eq!(BACKSLASH, SLASH.rotate_cc());
     }
 
     #[test]
-    fn test_rotate_cc() {
-        assert_eq!(HIGHFIVE.rotate_cc(), BitGrid8(0x171515151515151d));
-        assert_eq!(SMALL_FIVE.rotate_cc(), BitGrid8(0x1715151d00000000));
-        assert_eq!(BACKSLASH, SLASH.rotate_cc());
-        assert_eq!(FULL.rotate_cc(), FULL);
-        assert_eq!(UPPER_LEFT.rotate_cc(), LOWER_LEFT);
+    fn test_rotate() {
+        assert_eq!(HIGHFIVE.rotate(), BitGrid8(0x171515151515151d));
+        assert_eq!(SMALL_FIVE.rotate(), BitGrid8(0x1715151d00000000));
+        assert_eq!(BACKSLASH, SLASH.rotate());
+        assert_eq!(FULL.rotate(), FULL);
+        assert_eq!(UPPER_LEFT.rotate(), LOWER_LEFT);
     }
 
     #[test]
