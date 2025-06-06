@@ -285,7 +285,7 @@ impl BitGrid8 {
 
     /// Find the (x,y) bounding box of a BitGrid8.
     /// The box includes the origin and all nonzero squares.
-    pub fn bounding_box(self) -> (u8, u8) {
+    pub fn bounding_box(self) -> (u32, u32) {
         let mut shape = self.0;
         // Collect ones on x and y axes
         shape |= ((shape >> 1) & 0x7f7f7f7f7f7f7f7f) | shape >> 8;
@@ -293,7 +293,7 @@ impl BitGrid8 {
         shape |= ((shape >> 4) & 0x0f0f0f0f0f0f0f0f) | shape >> 32;
         let len_x = (shape & 0xff).count_ones();
         let len_y = (shape & 0x0101010101010101).count_ones();
-        (len_x as u8, len_y as u8)
+        (len_x as u32, len_y as u32)
     }
 
     /* TODO: should the shifts be by xx,yy instead of x,y?
@@ -470,16 +470,16 @@ mod test {
 
     #[test]
     fn test_shift_xy() {
+        assert_eq!(FULL.shift_xy(1,1), BitGrid8(0xfefe_fefe_fefe_fe00_u64));
         assert_eq!(FULL.shift_xy(1,-1), BitGrid8(0x00fe_fefe_fefe_fefe_u64));
-        // assert_eq!(FULL.shift_xy(-1), BitGrid8(0xffff_ffff_ffff_ff00_u64));
-        // assert_eq!(FULL.shift_xy(4), BitGrid8(0x0000_0000_ffff_ffff_u64));
-        // assert_eq!(FULL.shift_xy(-4), BitGrid8(0xffff_ffff_0000_0000_u64));
-        // assert_eq!(FULL.shift_xy(-8), BitGrid8(0));
-        // assert_eq!(FULL.shift_xy(8), BitGrid8(0));
+        assert_eq!(FULL.shift_xy(-8,1), BitGrid8(0));
+        assert_eq!(FULL.shift_xy(1,8), BitGrid8(0));
 
-        // let pentomino = BitGrid8::pentomino_map();
-        // assert_eq!((*(&pentomino[&'F'])).shift_y(1), BitGrid8(0x203));
-        // assert_eq!((*(&pentomino[&'F'])).shift_y(-1), BitGrid8(0x2030600));
+        let pentomino = BitGrid8::pentomino_map();
+        assert_eq!((*(&pentomino[&'F'])).shift_xy(1,1), BitGrid8(0x4060c00));
+        assert_eq!((*(&pentomino[&'F'])).shift_xy(1,-1), BitGrid8(0x406));
+        assert_eq!((*(&pentomino[&'F'])).shift_xy(-1,1), BitGrid8(0x1010300));
+        assert_eq!((*(&pentomino[&'F'])).shift_xy(-1,-1), BitGrid8(0x101));
     }
 
     #[test]
@@ -508,9 +508,15 @@ mod test {
     #[test]
     fn test_bitgrid8_iterator() {
         let pentomino = BitGrid8::pentomino_map();
-        let pent_i = pentomino[&'I'];
-        assert_eq!(pent_i.into_iter().collect::<Vec<_>>(), [BitGrid8(0x00000001), BitGrid8(0x00000100), BitGrid8(0x00010000), BitGrid8(0x01000000), BitGrid8(0x100000000)]);
-        assert_eq!(pent_i.rotate().into_iter().collect::<Vec<_>>(), [BitGrid8(0x00000008), BitGrid8(0x00000010), BitGrid8(0x00000020), BitGrid8(0x00000040), BitGrid8(0x00000080)]);
+        let pent_i_points = pentomino[&'I'].into_iter();
+        assert_eq!(pent_i_points.collect::<Vec<_>>(), [BitGrid8(0x00000001), BitGrid8(0x00000100), BitGrid8(0x00010000), BitGrid8(0x01000000), BitGrid8(0x100000000)]);
+        // Do it again to make sure iterator isn't consumed
+        assert_eq!(pent_i_points.collect::<Vec<_>>(), [BitGrid8(0x00000001), BitGrid8(0x00000100), BitGrid8(0x00010000), BitGrid8(0x01000000), BitGrid8(0x100000000)]);
+
+        let pent_i_points_rotate = pentomino[&'I'].rotate().into_iter();
+        assert_eq!(pent_i_points_rotate.collect::<Vec<_>>(), [BitGrid8(0x00000008), BitGrid8(0x00000010), BitGrid8(0x00000020), BitGrid8(0x00000040), BitGrid8(0x00000080)]);
+        // Do it again to make sure iterator isn't consumed
+        assert_eq!(pent_i_points_rotate.collect::<Vec<_>>(), [BitGrid8(0x00000008), BitGrid8(0x00000010), BitGrid8(0x00000020), BitGrid8(0x00000040), BitGrid8(0x00000080)]);
     }
 
     
