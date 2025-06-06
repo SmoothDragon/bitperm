@@ -33,8 +33,8 @@ use crate::bitgrid8::*;
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PieceBitGrid8{
-    bitgrid: BitGrid8,  // This acts like a u64
-    xy: (u8, u8),  // xy dimensions of bounding box
+    grid: BitGrid8,  // This acts like a u64
+    xy: (u32, u32),  // xy dimensions of bounding box
 }
 
 #[derive(Error, Debug, Clone, PartialEq)]
@@ -44,7 +44,7 @@ pub struct PieceGrid8Error(u64, String);
 impl PieceBitGrid8 {
     pub fn new(raw_u64: u64) -> Self {
         let grid = BitGrid8(raw_u64).shift_to_origin();
-        Self{ bitgrid: grid, xy: grid.bounding_box() }
+        Self{ grid: grid, xy: grid.bounding_box() }
     }
 
     /// Find the (x,y) bounding box of a piece shifted to origin
@@ -60,7 +60,7 @@ impl PieceBitGrid8 {
     }
 
     pub fn rotate_cc(self) -> Self {
-        Self{ bitgrid: self.bitgrid.rotate_cc() >> ((8 - self.xy.0) << 3).into(),
+        Self{ grid: self.grid.rotate_cc() >> ((8 - self.xy.0) << 3).into(),
             xy: (self.xy.1, self.xy.0),
             ..self
         }
@@ -68,9 +68,35 @@ impl PieceBitGrid8 {
 
     // Flip along x-axis. For 2D this is the same as mirror.
     pub fn flip_x(self) -> Self { 
-        Self{ bitgrid: self.bitgrid.flip_x() >> ((8 - self.xy.1) << 3).into(),
+        Self{ grid: self.grid.flip_x() >> ((8 - self.xy.1) << 3).into(),
             ..self
         }
+    }
+    
+    /// Generate all xy-shifts of piece that cover "target" and avoid "board".
+    /// "target=x+8*y" represents the bit the 1 << target 
+    pub fn targeted_fit(self, board: BitGrid8, target: u32) -> Option<Vec<BitGrid8>> {
+        if target >= 64 { return None };
+        let (m,n) = self.xy;
+        let x = target & 0x7;
+        let y = target.unbounded_shr(3);
+        let x_min: u32 = if m > x { 0 } else { x - m + 1 };
+        let x_max: u32 = u32::min(8-m, x+1);
+        let y_min: u32 = if n > y { 0 } else { y - n + 1 };
+        let y_max: u32 = u32::min(8-n, y+1);
+        println!("{} {} {} {}", x_min, x_max, y_min, y_max);
+        let mut result = Vec::<BitGrid8>::new();
+
+        for jj in y_min..y_max {
+            for ii in x_min..x_max {
+                let grid = self.grid.shift_xy(ii as i32, jj as i32);
+                // result.push(grid);
+                if grid & board == BitGrid8(0) 
+                    && grid.0.unbounded_shr(target) & 1 == 1 
+                    { result.push(grid) }
+            }
+        }
+        if result.len() == 0 { None } else { Some(result) }
     }
 
     /*
@@ -97,7 +123,7 @@ impl PieceBitGrid8 {
     /// Prefer a gray code path through all rotations
     pub fn rotate_all(self) -> ArrayVec::<PieceBitGrid8, 4> {
         let mut vec = ArrayVec::<PieceBitGrid8, 4>::new();
-        let mut grid = self.bitgrid;
+        let mut grid = self.grid;
         vec.push(PieceBitGrid8::new(*grid));
         for _ in 0..3 { grid = grid.rotate(); vec.push(PieceBitGrid8::new(*grid)); }
         vec.sort_unstable();
@@ -128,7 +154,7 @@ impl PieceBitGrid8 {
 
 impl fmt::Debug for PieceBitGrid8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "PieceBitGrid8({:#010x})", self.bitgrid.0)
+        write!(f, "PieceBitGrid8({:#010x})", self.grid.0)
     } 
 } 
 
@@ -138,7 +164,7 @@ impl fmt::Display for PieceBitGrid8 {
         write!(f, "{}",     
             (0..m*n)
             .map(|l| (l%m, l / m) )
-            .map(|(x,y)| format!("{}{}", if (self.bitgrid.0 >> (x+8*y)) & 0x1 == 1 { "#" } else { "." },
+            .map(|(x,y)| format!("{}{}", if (self.grid.0 >> (x+8*y)) & 0x1 == 1 { "#" } else { "." },
                 if x+1 == m { "\n" } else { "" }))
             .collect::<String>()
             )
@@ -164,7 +190,7 @@ impl core::ops::Deref for PieceBitGrid8 {
     type Target = BitGrid8;
 
     fn deref(&self) -> &Self::Target {
-        &self.bitgrid
+        &self.grid
     }
 }
 
@@ -183,18 +209,47 @@ mod test {
 
     #[test]
     fn test_new() {
-        assert_eq!(PieceBitGrid8::new(0x8040201008040201).bitgrid, BitGrid8(0x8040201008040201));
+        assert_eq!(PieceBitGrid8::new(0x8040201008040201).grid, BitGrid8(0x8040201008040201));
         assert_eq!(PieceBitGrid8::new(0x8040201008040201).xy, (8, 8));
     }
 
     #[test]
     fn test_from_bitgrid8() {
-        assert_eq!(PieceBitGrid8::from(BitGrid8(0x8040201008040201)).bitgrid, BitGrid8(0x8040201008040201));
+        assert_eq!(PieceBitGrid8::from(BitGrid8(0x8040201008040201)).grid, BitGrid8(0x8040201008040201));
         assert_eq!(PieceBitGrid8::from(BitGrid8(0x8040201008040201)).xy, (8,8));
 
         let pentomino = BitGrid8::pentomino_map();
         assert_eq!(PieceBitGrid8::from(pentomino[&'U']).xy, (3,2));
-        assert_eq!(PieceBitGrid8::from(pentomino[&'U']).bitgrid, pentomino[&'U']);
+        assert_eq!(PieceBitGrid8::from(pentomino[&'U']).grid, pentomino[&'U']);
+    }
+
+    #[test]
+    fn test_targeted_fit() {
+        let board = BitGrid8(0);
+        let square = PieceBitGrid8::new(0x303);
+        assert_eq!(square.targeted_fit(board, 0), Some(vec![BitGrid8(0x00000303)]));
+        assert_eq!(square.targeted_fit(board, 1), Some(vec![BitGrid8(0x00000303), BitGrid8(0x00000606)]));
+        assert_eq!(square.targeted_fit(board, 2), Some(vec![BitGrid8(0x00000606), BitGrid8(0x00000c0c)]));
+        assert_eq!(square.targeted_fit(board, 3), Some(vec![BitGrid8(0x00000c0c), BitGrid8(0x00001818)]));
+        assert_eq!(square.targeted_fit(board, 10), Some(vec![BitGrid8(0x00000606), BitGrid8(0x00000c0c), BitGrid8(0x00060600), BitGrid8(0x000c0c00)]));
+
+        let tee = PieceBitGrid8::new(0x702);
+        assert_eq!(tee.targeted_fit(board, 0), None);
+        assert_eq!(tee.targeted_fit(board, 1), Some(vec![BitGrid8(0x00000702)]));
+        assert_eq!(tee.targeted_fit(board, 2), Some(vec![BitGrid8(0x00000e04)]));
+        assert_eq!(tee.targeted_fit(board, 10), Some(vec![BitGrid8(0x00000702), BitGrid8(0x00000e04), BitGrid8(0x00001c08), BitGrid8(0x000e0400)]));
+
+        // let pentomino = BitGrid8::pentomino_map();
+        // assert_eq!(format!("{}", PieceBitGrid8::new(0x8040201008040201)), 
+            // "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
+        // assert_eq!(format!("{}", PieceBitGrid8::from(pentomino[&'U'])),
+            // "#.#\n###\n");
+        // assert_eq!(format!("{}", PieceBitGrid8::from(pentomino[&'F'])),
+            // ".##\n##.\n.#.\n");
+        // assert_eq!(format!("{}", PieceBitGrid8::new(0x8040201008040201)), 
+            // "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
+        // assert_eq!(format!("{}", PieceBitGrid8::new(0x1)), 
+            // "#\n");
     }
 
     #[test]
@@ -215,8 +270,8 @@ mod test {
     #[test]
     fn test_new_pentomino() {
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!(PieceBitGrid8::from(pentomino[&'F']).bitgrid, BitGrid8(0x20306));
-        assert_eq!(PieceBitGrid8::from((pentomino[&'F'] << 20)).bitgrid, BitGrid8(0x20306));
+        assert_eq!(PieceBitGrid8::from(pentomino[&'F']).grid, BitGrid8(0x20306));
+        assert_eq!(PieceBitGrid8::from((pentomino[&'F'] << 20)).grid, BitGrid8(0x20306));
         assert_eq!(PieceBitGrid8::from(pentomino[&'F']).xy, (3, 3));
         assert_eq!(PieceBitGrid8::from(pentomino[&'I']).xy, (1, 5));
         assert_eq!(PieceBitGrid8::from(pentomino[&'L']).xy, (2, 4));
@@ -348,7 +403,7 @@ mod test {
         x_shift |= x_shift >> 16;
         x_shift |= x_shift >> 8;
         shape = shape >> x_shift.trailing_zeros();
-        Self{ bitgrid: shape, xy: Self::bounding_box(shape) }
+        Self{ grid: shape, xy: Self::bounding_box(shape) }
     }
 
 */
