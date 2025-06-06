@@ -81,9 +81,9 @@ impl PieceBitGrid8 {
         let x = target & 0x7;
         let y = target.unbounded_shr(3);
         let x_min: u32 = if m > x { 0 } else { x - m + 1 };
-        let x_max: u32 = u32::min(8-m, x+1);
+        let x_max: u32 = u32::min(9-m, x+1);
         let y_min: u32 = if n > y { 0 } else { y - n + 1 };
-        let y_max: u32 = u32::min(8-n, y+1);
+        let y_max: u32 = u32::min(9-n, y+1);
         println!("{} {} {} {}", x_min, x_max, y_min, y_max);
         let mut result = Vec::<BitGrid8>::new();
 
@@ -91,9 +91,12 @@ impl PieceBitGrid8 {
             for ii in x_min..x_max {
                 let grid = self.grid.shift_xy(ii as i32, jj as i32);
                 // result.push(grid);
-                if grid & board == BitGrid8(0) 
-                    && grid.0.unbounded_shr(target) & 1 == 1 
-                    { result.push(grid) }
+                if grid.0.unbounded_shr(target) & 1 == 1 
+                    && grid & board == BitGrid8(0) 
+                    { 
+                        result.push(grid);
+                        println!("{:}", &grid);
+                    }
             }
         }
         if result.len() == 0 { None } else { Some(result) }
@@ -158,16 +161,30 @@ impl fmt::Debug for PieceBitGrid8 {
     } 
 } 
 
+// impl fmt::Display for PieceBitGrid8 {
+    // fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        // let (m, n) = self.xy;
+        // write!(f, "{}",     
+            // (0..m*n)
+            // .map(|l| (l%m, l / m) )
+            // .map(|(x,y)| format!("{}{}", if (self.grid.0 >> (x+8*y)) & 0x1 == 1 { "#" } else { "." },
+                // if x+1 == m { "\n" } else { "" }))
+            // .collect::<String>()
+            // )
+    // } 
+// } 
+
 impl fmt::Display for PieceBitGrid8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let (m, n) = self.xy;
-        write!(f, "{}",     
-            (0..m*n)
-            .map(|l| (l%m, l / m) )
-            .map(|(x,y)| format!("{}{}", if (self.grid.0 >> (x+8*y)) & 0x1 == 1 { "#" } else { "." },
-                if x+1 == m { "\n" } else { "" }))
+        write!(f, "{}", 
+            (0..n).rev().map(|y|
+                (0..m)
+                    .map(|x| format!("{}", if (self.0 >> (x + 8*y)) & 0x1 == 1 { "🟥" } else { "⬜" }))
+                    .collect::<String>()
+                    +"\n")
             .collect::<String>()
-            )
+        )
     } 
 } 
 
@@ -239,32 +256,30 @@ mod test {
         assert_eq!(tee.targeted_fit(board, 2), Some(vec![BitGrid8(0x00000e04)]));
         assert_eq!(tee.targeted_fit(board, 10), Some(vec![BitGrid8(0x00000702), BitGrid8(0x00000e04), BitGrid8(0x00001c08), BitGrid8(0x000e0400)]));
 
-        // let pentomino = BitGrid8::pentomino_map();
-        // assert_eq!(format!("{}", PieceBitGrid8::new(0x8040201008040201)), 
-            // "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
-        // assert_eq!(format!("{}", PieceBitGrid8::from(pentomino[&'U'])),
-            // "#.#\n###\n");
-        // assert_eq!(format!("{}", PieceBitGrid8::from(pentomino[&'F'])),
-            // ".##\n##.\n.#.\n");
-        // assert_eq!(format!("{}", PieceBitGrid8::new(0x8040201008040201)), 
-            // "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
-        // assert_eq!(format!("{}", PieceBitGrid8::new(0x1)), 
-            // "#\n");
+        let pentomino = BitGrid8::pentomino_map();
+        let pent_f = PieceBitGrid8::from(pentomino[&'F']);
+        println!("{:}", pent_f);
+        assert_eq!(pent_f.targeted_fit(board, 21).unwrap().len(), 5);
+        let board = FULL ^ (pent_f.grid << 20);
+        // println!("{:}", board);
+        // println!("{:}", BitGrid8(1<<21));
+        assert_eq!(pent_f.targeted_fit(board, 21), Some(vec![BitGrid8(0x2030600000)]));
+        assert_eq!(pent_f.targeted_fit(board, 21), Some(vec![pent_f.grid << 20]));
     }
 
     #[test]
     fn test_piece_bitgrid8_display() {
         let pentomino = BitGrid8::pentomino_map();
         assert_eq!(format!("{}", PieceBitGrid8::new(0x8040201008040201)), 
-            "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
+            "⬜⬜⬜⬜⬜⬜⬜🟥\n⬜⬜⬜⬜⬜⬜🟥⬜\n⬜⬜⬜⬜⬜🟥⬜⬜\n⬜⬜⬜⬜🟥⬜⬜⬜\n⬜⬜⬜🟥⬜⬜⬜⬜\n⬜⬜🟥⬜⬜⬜⬜⬜\n⬜🟥⬜⬜⬜⬜⬜⬜\n🟥⬜⬜⬜⬜⬜⬜⬜\n");
         assert_eq!(format!("{}", PieceBitGrid8::from(pentomino[&'U'])),
-            "#.#\n###\n");
+            "🟥🟥🟥\n🟥⬜🟥\n");
         assert_eq!(format!("{}", PieceBitGrid8::from(pentomino[&'F'])),
-            ".##\n##.\n.#.\n");
+            "⬜🟥⬜\n🟥🟥⬜\n⬜🟥🟥\n");
         assert_eq!(format!("{}", PieceBitGrid8::new(0x8040201008040201)), 
-            "#.......\n.#......\n..#.....\n...#....\n....#...\n.....#..\n......#.\n.......#\n");
+            "⬜⬜⬜⬜⬜⬜⬜🟥\n⬜⬜⬜⬜⬜⬜🟥⬜\n⬜⬜⬜⬜⬜🟥⬜⬜\n⬜⬜⬜⬜🟥⬜⬜⬜\n⬜⬜⬜🟥⬜⬜⬜⬜\n⬜⬜🟥⬜⬜⬜⬜⬜\n⬜🟥⬜⬜⬜⬜⬜⬜\n🟥⬜⬜⬜⬜⬜⬜⬜\n");
         assert_eq!(format!("{}", PieceBitGrid8::new(0x1)), 
-            "#\n");
+            "🟥\n");
     }
 
     #[test]
