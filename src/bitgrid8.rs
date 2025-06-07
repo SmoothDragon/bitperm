@@ -80,6 +80,15 @@ impl core::ops::BitOr<u64> for BitGrid8 {
     }
 }
 
+/// Define BitXor with u64 for BitGrid8
+impl core::ops::BitXor<u64> for BitGrid8 {
+    type Output = Self;
+
+    fn bitxor(self, rhs: u64) -> Self {
+        Self(self.0 ^ rhs)
+    }
+}
+
 impl fmt::Debug for BitGrid8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "BitGrid8({:#010x})", self.0)
@@ -177,10 +186,66 @@ impl BitGrid8 {
         vec
     }
 
-    /// Return the border of a BitGrid8. This includes the border of the 8x8 square.
+    /// Return the NSEW border of a BitGrid8. This includes the border of the 8x8 square.
     pub fn border(self) -> Self {
         (self | self.shift_x(1) | self.shift_x(-1) | self.shift_y(1) | self.shift_y(-1) | BORDER) ^ self
     }
+
+    /// Return the king move border of a BitGrid8. This includes the border of the 8x8 square.
+    pub fn border8(self) -> Self {
+        let mut grid = self | self.shift_x(1) | self.shift_x(-1);
+        grid |= grid.shift_y(1) | grid.shift_y(-1) | BORDER;
+        grid ^ self
+    }
+
+    // pub fn border_domino_iter(self) -> impl Iterator<Item = Self> {
+        // self.border8().into_iter().flat_map(|pixel| {
+            // if (pixel.shift_x(1) & self).0 == 0{ vec![pixel | pixel.shift_x(1)].into_iter() };
+            // if (pixel.shift_y(1) & self).0 == 0 { vec![pixel | pixel.shift_y(1)].into_iter() };
+        // })
+    // }
+
+    /// TODO: What to do about diagonal connections?
+    /// This method ignores the corner connections in a down right direction, but messes up with
+    /// down left.
+    /// Perhaps we count the connections both ways and correct by both diagonals.
+    pub fn count_components(self) -> u32 {
+        self.count_upper_right_2x2_blocks() - self.count_lower_left_2x2_blocks()
+    }
+
+    /// Count how many complete 2x2 blocks there are in the 4x4 subgrid
+    #[inline]
+    pub fn count_2x2_blocks(self) -> u32 {
+        let mut grid: u64 = self.0;
+        grid &= grid.unbounded_shr(8);
+        grid &= grid.unbounded_shr(1) & 0x0055_0055_0055_0055u64;
+        grid.count_ones()
+    }
+
+    /// TODO: These can be sped up by doing them simultaneously
+    /// Count upper right 2x2 blocks
+    /// .#
+    /// ..
+    #[inline]
+    pub fn count_upper_right_2x2_blocks(self) -> u32 {
+        println!("{:}", BitGrid8((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ 0x55ff_55ff_55ff_55ff_u64));
+        BitGrid8((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ 0x55ff_55ff_55ff_55ff_u64).count_2x2_blocks()
+            + BitGrid8((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ 0x55ff_55ff_55ff_55ff_u64).count_2x2_blocks()
+            + BitGrid8(self.0.unbounded_shl(8) ^ 0x55ff_55ff_55ff_55ff_u64).count_2x2_blocks()
+            + (self ^ BitGrid8(0x55ff_55ff_55ff_55ff_u64)).count_2x2_blocks()
+    }
+
+    /// Count lower left 2x2 blocks
+    /// ##
+    /// .#
+    #[inline]
+    pub fn count_lower_left_2x2_blocks(self) -> u32 {
+        BitGrid8((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ 0x0055_0055_0055_0055_u64).count_2x2_blocks()
+            + BitGrid8((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ 0x0055_0055_0055_0055_u64).count_2x2_blocks()
+            + BitGrid8(self.0.unbounded_shl(8) ^ 0x0055_0055_0055_0055_u64).count_2x2_blocks()
+            + (self ^ BitGrid8(0x0055_0055_0055_0055_u64)).count_2x2_blocks()
+    }
+
 
     /// Produce all rotations and reflections of a BitGrid object translated towards origin.
     /// Prefer a gray code path through all rotations
@@ -399,6 +464,52 @@ mod test {
         let pentomino = BitGrid8::pentomino_map();
         println!("{:}", pentomino[&'F'].border());
         assert_eq!((pentomino[&'F']).border(), BitGrid8(0xff818181838584f9));
+    }
+
+    #[test]
+    fn test_border_connected() {
+        assert_eq!(FULL.border8(), BitGrid8(0));
+        assert_eq!(UPPER_RIGHT.border8(), BitGrid8(0xff8181f90909090f));
+        assert_eq!(BACKSLASH.border8(), BitGrid8(0xfe8d9bb7edd9b17f));
+        assert_eq!(CENTER_XY.border8(), BitGrid8(0xe7a5e70000e7a5e7));
+        assert_eq!(BitGrid8(0x1818000000).border8(), BitGrid8(0xff81bda5a5bd81ff));
+
+        let pentomino = BitGrid8::pentomino_map();
+        println!("{:}", pentomino[&'F'].border8());
+        assert_eq!((pentomino[&'F']).border8(), BitGrid8(0xff81818187858cf9));
+    }
+
+    #[test]
+    fn test_count_2x2_blocks() {
+        assert_eq!(FULL.count_2x2_blocks(), 16);
+        assert_eq!(UPPER_RIGHT.count_2x2_blocks(), 4);
+        assert_eq!(BACKSLASH.count_2x2_blocks(), 0);
+        assert_eq!(CENTER_XY.count_2x2_blocks(), 0);
+    }
+
+    #[test]
+    fn test_count_upper_right_2x2_blocks_all() {
+        assert_eq!(FULL.count_upper_right_2x2_blocks(), 1);
+        assert_eq!(CENTER_XY.count_upper_right_2x2_blocks(), 2);
+        assert_eq!(HIGHFIVE.count_upper_right_2x2_blocks(), 2);
+        assert_eq!(BACKSLASH.count_upper_right_2x2_blocks(), 8);
+    }
+
+    #[test]
+    fn test_count_lower_left_2x2_blocks_all() {
+        assert_eq!(FULL.count_lower_left_2x2_blocks(), 0);
+        assert_eq!(CENTER_XY.count_lower_left_2x2_blocks(), 1);
+        assert_eq!(HIGHFIVE.count_lower_left_2x2_blocks(), 1);
+        assert_eq!(BACKSLASH.count_lower_left_2x2_blocks(), 0);
+    }
+
+    #[test]
+    fn test_count_components() {
+        assert_eq!(FULL.count_components(), 1);
+        assert_eq!(CENTER_XY.count_components(), 1);
+        assert_eq!(HIGHFIVE.count_components(), 1);
+        assert_eq!(BACKSLASH.count_components(), 8);
+        assert_eq!(SLASH.count_components(), 1);  // TODO: What to do about diagonal connections?
     }
 
     #[test]
