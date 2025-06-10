@@ -27,14 +27,13 @@ use derive_more::*;
 use thiserror::*;
 use arrayvec::*;
 
-// use crate::bitlib::swap_mask_shift_u64;
 use crate::bitgrid8::*;
 
 
 #[derive(Copy, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct PieceBitGrid8{
-    grid: BitGrid8,  // This acts like a u64
-    xy: (u32, u32),  // xy dimensions of bounding box
+    pub(crate) grid: BitGrid8,  // This acts like a u64
+    pub(crate) xy: (u32, u32),  // xy dimensions of bounding box
 }
 
 #[derive(Error, Debug, Clone, PartialEq)]
