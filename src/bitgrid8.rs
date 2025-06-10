@@ -205,15 +205,21 @@ impl BitGrid8 {
         // })
     // }
 
-    /// TODO: What to do about diagonal connections?
     /// This method ignores the corner connections in a down right direction, but messes up with
     /// down left.
     /// Perhaps we count the connections both ways and correct by both diagonals.
+    /// This algorithm uses a fast local computation to compute the number of connected components
+    /// minus the number of holes in a shape.
+    /// The original algorithm assumes that no filled squares can be only corner adjacent.
+    /// This algorithm gives the correct count allows for adjacent corners (not considered connected).
+    /// TODO: This could be sped up by doing all three antimask counts simulataneously.
     pub fn count_components(self) -> u32 {
-        self.count_upper_right_2x2_blocks() - self.count_lower_left_2x2_blocks()
+        self.count_2x2_antimask(0x55ff_55ff_55ff_55ff_u64)
+        + self.count_2x2_antimask(0x55aa_55aa_55aa_55aa_u64)  // Only needed if corners touch
+        - self.count_2x2_antimask(0x0055_0055_0055_0055_u64)
     }
 
-    /// Count how many complete 2x2 blocks there are in the 4x4 subgrid
+    /// Count how many complete 2x2 blocks there are in the 4x4 subgrid of such blocks
     #[inline]
     pub fn count_2x2_blocks(self) -> u32 {
         let mut grid: u64 = self.0;
@@ -221,6 +227,26 @@ impl BitGrid8 {
         grid &= grid.unbounded_shr(1) & 0x0055_0055_0055_0055u64;
         grid.count_ones()
     }
+
+    /// Count the total number of a specific 2x2 block fill.
+    /// The mask provided should be the complement of this fill so that when it is XORed in it
+    /// creates a filled 2x2 block.
+    /// In particular, a 0x0 mask will return the number of 2x2 full blocks.
+    /// ##  =>  0x0055_0055_0055_0055_u64
+    /// .#
+    /// .#  =>  0x55ff_55ff_55ff_55ff_u64
+    /// ..
+    /// .#  =>  0x55aa_55aa_55aa_55aa_u64
+    /// #.
+    #[inline]
+    pub fn count_2x2_antimask(self, antimask: u64) -> u32 {
+        const RIGHT: u64 = 0xfefe_fefe_fefe_fefe_u64;
+        BitGrid8((self.0.unbounded_shl(9) & RIGHT) ^ antimask).count_2x2_blocks()
+            + BitGrid8((self.0.unbounded_shl(1) & RIGHT) ^ antimask).count_2x2_blocks()
+            + BitGrid8(self.0.unbounded_shl(8) ^ antimask).count_2x2_blocks()
+            + (self ^ BitGrid8(antimask)).count_2x2_blocks()
+    }
+
 
     /// TODO: These can be sped up by doing them simultaneously
     /// Count upper right 2x2 blocks
@@ -240,10 +266,24 @@ impl BitGrid8 {
     /// .#
     #[inline]
     pub fn count_lower_left_2x2_blocks(self) -> u32 {
-        BitGrid8((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ 0x0055_0055_0055_0055_u64).count_2x2_blocks()
-            + BitGrid8((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ 0x0055_0055_0055_0055_u64).count_2x2_blocks()
-            + BitGrid8(self.0.unbounded_shl(8) ^ 0x0055_0055_0055_0055_u64).count_2x2_blocks()
-            + (self ^ BitGrid8(0x0055_0055_0055_0055_u64)).count_2x2_blocks()
+        const antimask: u64 = 0x0055_0055_0055_0055_u64;
+        BitGrid8((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ antimask).count_2x2_blocks()
+            + BitGrid8((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ antimask).count_2x2_blocks()
+            + BitGrid8(self.0.unbounded_shl(8) ^ antimask).count_2x2_blocks()
+            + (self ^ BitGrid8(antimask)).count_2x2_blocks()
+    }
+
+
+    /// Count antidiagonal 2x2 blocks
+    /// .#
+    /// #.
+    #[inline]
+    pub fn count_antidiagonal_2x2_blocks(self) -> u32 {
+        const antimask: u64 = 0x55aa_55aa_55aa_55aa_u64;
+        BitGrid8((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ antimask).count_2x2_blocks()
+            + BitGrid8((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ antimask).count_2x2_blocks()
+            + BitGrid8(self.0.unbounded_shl(8) ^ antimask).count_2x2_blocks()
+            + (self ^ BitGrid8(antimask)).count_2x2_blocks()
     }
 
 
@@ -509,7 +549,7 @@ mod test {
         assert_eq!(CENTER_XY.count_components(), 1);
         assert_eq!(HIGHFIVE.count_components(), 1);
         assert_eq!(BACKSLASH.count_components(), 8);
-        assert_eq!(SLASH.count_components(), 1);  // TODO: What to do about diagonal connections?
+        assert_eq!(SLASH.count_components(), 8);
     }
 
     #[test]
