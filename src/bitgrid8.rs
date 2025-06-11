@@ -171,10 +171,9 @@ impl BitGrid8 {
         ])
     }
 
-
     /// Produce all rotations of a BitGrid object translated towards origin.
     /// Prefer a gray code path through all rotations
-    /// TODO: This should just rotate and not shift to oorigin like piece_bitgtid8
+    /// TODO: This should just rotate and not shift to origin like piece_bitgtid8
     pub fn origin_rotate_all(self) -> ArrayVec::<BitGrid8, 4> {
         let mut vec = ArrayVec::<BitGrid8, 4>::new();
         let mut x = self.shift_to_origin();
@@ -189,6 +188,11 @@ impl BitGrid8 {
     /// Return the NSEW border of a BitGrid8. This includes the border of the 8x8 square.
     pub fn border(self) -> Self {
         (self | self.shift_x(1) | self.shift_x(-1) | self.shift_y(1) | self.shift_y(-1) | BORDER) ^ self
+    }
+
+    /// Do two BitGrid8 objects overlap?
+    pub fn has_overlap(self, other: Self) -> bool {
+        self.0 & other.0 != 0
     }
 
     /// Return the king move border of a BitGrid8. This includes the border of the 8x8 square.
@@ -266,11 +270,11 @@ impl BitGrid8 {
     /// .#
     #[inline]
     pub fn count_lower_left_2x2_blocks(self) -> u32 {
-        const antimask: u64 = 0x0055_0055_0055_0055_u64;
-        BitGrid8((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ antimask).count_2x2_blocks()
-            + BitGrid8((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ antimask).count_2x2_blocks()
-            + BitGrid8(self.0.unbounded_shl(8) ^ antimask).count_2x2_blocks()
-            + (self ^ BitGrid8(antimask)).count_2x2_blocks()
+        const ANTIMASK: u64 = 0x0055_0055_0055_0055_u64;
+        BitGrid8((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ ANTIMASK).count_2x2_blocks()
+            + BitGrid8((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ ANTIMASK).count_2x2_blocks()
+            + BitGrid8(self.0.unbounded_shl(8) ^ ANTIMASK).count_2x2_blocks()
+            + (self ^ BitGrid8(ANTIMASK)).count_2x2_blocks()
     }
 
 
@@ -279,11 +283,11 @@ impl BitGrid8 {
     /// #.
     #[inline]
     pub fn count_antidiagonal_2x2_blocks(self) -> u32 {
-        const antimask: u64 = 0x55aa_55aa_55aa_55aa_u64;
-        BitGrid8((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ antimask).count_2x2_blocks()
-            + BitGrid8((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ antimask).count_2x2_blocks()
-            + BitGrid8(self.0.unbounded_shl(8) ^ antimask).count_2x2_blocks()
-            + (self ^ BitGrid8(antimask)).count_2x2_blocks()
+        const ANTIMASK: u64 = 0x55aa_55aa_55aa_55aa_u64;
+        BitGrid8((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ ANTIMASK).count_2x2_blocks()
+            + BitGrid8((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ ANTIMASK).count_2x2_blocks()
+            + BitGrid8(self.0.unbounded_shl(8) ^ ANTIMASK).count_2x2_blocks()
+            + (self ^ BitGrid8(ANTIMASK)).count_2x2_blocks()
     }
 
 
