@@ -13,7 +13,10 @@
 // -----------------------------------------------------------------
 
 use std::fmt;
-use std::collections::HashMap;
+// use std::collections::HashMap;
+use std::{ops::SubAssign, collections::{HashMap, hash_map::Entry::*}};
+
+use std::iter::once;
 
 // use derive_more::*;
 // use thiserror::*;
@@ -51,6 +54,31 @@ impl PackBitGrid8 {
         }
     }
 
+    pub fn add_piece(&self, grid: BitGrid8) -> Option<Self> {
+        if grid.has_overlap(self.fill) { return None };  // Piece cannot be added
+        let mut piece_count = self.piece.clone();
+        let piece = PieceBitGrid8::from(grid);
+
+        // Reduce piece count by one, removing the piece if none left.
+        match piece_count.entry(piece) {
+            // Vacant(x) => { panic!("Removing piece that we don't have") }, // This shouldn't happpen.
+            Vacant(x) => { return None },
+            Occupied(x) if *x.get() <= 1 => { x.remove(); } 
+            Occupied(mut x) => { x.get_mut().sub_assign(1); },
+        }
+
+        // Remove putative locations that conflict with new piece
+        
+        Some(Self {
+            placed: self.placed.clone().into_iter().chain(once(grid)).collect(),
+            fill: self.fill ^ grid,
+            piece: piece_count,
+            ..self.clone()
+            // border: Self::domino_covers(frame, &piece_location),
+            // location: piece_location,
+        })
+    }
+
     pub fn next_piece(&self) -> PieceBitGrid8 {
         let mut best_count = 1000000;
         let mut best_piece = PieceBitGrid8::new(0);
@@ -74,7 +102,7 @@ impl PackBitGrid8 {
                 best_count = count;
             }
         }
-        best_piece
+        best_domino
     }
 
     pub fn piece_location(frame: BitGrid8, pieces: &Vec<PieceBitGrid8>) -> HashMap<PieceBitGrid8, Vec<BitGrid8>> {
