@@ -51,6 +51,32 @@ impl PackBitGrid8 {
         }
     }
 
+    pub fn next_piece(&self) -> PieceBitGrid8 {
+        let mut best_count = 1000000;
+        let mut best_piece = PieceBitGrid8::new(0);
+        for (piece, piece_list) in &self.location {
+            let count = piece_list.len();
+            if count < best_count {
+                best_piece = *piece;
+                best_count = count;
+            }
+        }
+        best_piece
+    }
+
+    pub fn next_domino(&self) -> BitGrid8 {
+        let mut best_count = 1000000;
+        let mut best_domino = BitGrid8(0);
+        for (domino, domino_list) in &self.border {
+            let count = domino_list.len();
+            if count < best_count {
+                best_domino = *domino;
+                best_count = count;
+            }
+        }
+        best_piece
+    }
+
     pub fn piece_location(frame: BitGrid8, pieces: &Vec<PieceBitGrid8>) -> HashMap<PieceBitGrid8, Vec<BitGrid8>> {
         let mut piece_location = HashMap::<PieceBitGrid8, Vec<BitGrid8>>::new();
         for &piece in pieces {
@@ -209,6 +235,21 @@ mod test {
         assert_eq!(domino[&BitGrid8(0x101)].len(), 20);
         assert_eq!(domino[&BitGrid8(0x10100)].len(), 30);
         assert_eq!(domino[&BitGrid8(0x202)].len(), 38);
+    }
+
+    #[test]
+    fn test_pack_bitgrid8_next_piece() {
+        // Placements avoid central 4x4 square
+        let center4x4 = BitGrid8(0x3c3c3c3c0000);
+        let center2x2 = BitGrid8(0x1818000000);
+        let start = PackBitGrid8::new(center2x2, PieceBitGrid8::pentomino_map().into_values().collect::<Vec<_>>());
+        let next_piece = start.next_piece();
+        assert_eq!(next_piece, PieceBitGrid8::new(0x20702));
+        assert_eq!(start.location[&next_piece].len(), 24);
+        let start = PackBitGrid8::new(center4x4, PieceBitGrid8::pentomino_map().into_values().collect::<Vec<_>>());
+        let next_piece = start.next_piece();
+        assert_eq!(next_piece, PieceBitGrid8::new(0x20702));
+        assert_eq!(start.location[&next_piece].len(), 4);
     }
 
     /*
