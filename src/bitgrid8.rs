@@ -195,6 +195,12 @@ impl BitGrid8 {
         self.0 & other.0 != 0
     }
 
+    /// Does the BitGrid8 contain nothing?
+    #[inline(always)]
+    pub fn is_empty(self) -> bool {
+        self.0 == 0
+    }
+
     /// Return the king move border of a BitGrid8. This includes the border of the 8x8 square.
     pub fn border8(self) -> Self {
         let mut grid = self | self.shift_x(1) | self.shift_x(-1);

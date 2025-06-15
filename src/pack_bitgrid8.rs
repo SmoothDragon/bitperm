@@ -33,17 +33,33 @@ pub struct PackingGrid8{
 }
 
 impl PackingGrid8 {
-    pub fn new(pieces: Vec<BitGrid8>) -> Self {
+    pub fn new() -> Self {
+        Self{ fill: BitGrid8(0), pieces: vec![] }
+    }
+
+    pub fn from_vec(pieces: Vec<BitGrid8>) -> Option<Self> {
         let mut fill = BitGrid8(0);
 
         for piece in &pieces {
+            if fill.has_overlap(*piece) { return None };
             fill |= *piece;
         }
-        Self{ fill: fill, pieces: pieces }
+        Some(Self{ fill: fill, pieces: pieces })
+    }
+
+    pub fn add(&self, piece: BitGrid8) -> Option<Self> {
+        if self.fill.has_overlap(piece) { return None };
+
+        let new_pieces: Vec<BitGrid8> = self.pieces
+            .iter()
+            .map(|x| *x)
+            .chain(std::iter::once(piece))
+            .collect();
+        Some(Self{ fill: self.fill | piece, pieces: new_pieces })
     }
 }
 
-const colored_blocks: [&str; 15] = [ 
+const COLORED_BLOCKS: [&str; 15] = [ 
     "\u{2B1C}",  // white square
     "\u{2B1B}",  // black square
     "\u{1F7E5}",  // red square
@@ -64,13 +80,13 @@ const colored_blocks: [&str; 15] = [
 
 impl fmt::Display for PackingGrid8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut array: [&str; 64] = [&colored_blocks[0]; 64];
+        let mut array: [&str; 64] = [&COLORED_BLOCKS[0]; 64];
         let mut count: usize = 1;
         for grid in &self.pieces {
             // TODO: this can be sped up by a better iterator
             for ii in 0..64 {
                 if (grid.0 >> ii) & 1 == 1 {
-                    array[ii] = &colored_blocks[count];
+                    array[ii] = &COLORED_BLOCKS[count];
                 }
             }
             count += 1;
@@ -122,7 +138,7 @@ impl PackBitGrid8 {
         // Reduce piece count by one, removing the piece if none left.
         match piece_counts.entry(piece) {
             // Vacant(x) => { panic!("Removing piece that we don't have") }, // This shouldn't happpen.
-            Vacant(x) => { return None },
+            Vacant(_) => { return None },
             Occupied(x) if *x.get() <= 1 => { x.remove(); } 
             Occupied(mut x) => { x.get_mut().sub_assign(1); },
         }
@@ -280,14 +296,22 @@ mod test {
 
     #[test]
     fn test_packing_grid8_display() {
-        assert_eq!(format!("{}", PackingGrid8::new(vec![BitGrid8(0x0)])),
+        assert_eq!(format!("{}", PackingGrid8::new()),
         "⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n");
-        assert_eq!(format!("{}", PackingGrid8::new(vec![BitGrid8(0x1818000000)])),
+        assert_eq!(format!("{}", PackingGrid8::from_vec(vec![BitGrid8(0x1818000000)]).unwrap()),
         "⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬛⬛⬜⬜⬜\n⬜⬜⬜⬛⬛⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n");
-        assert_eq!(format!("{}", PackingGrid8::new(vec![BitGrid8(0x1818000000), BitGrid8(0x20306)])),
+        assert_eq!(format!("{}", PackingGrid8::from_vec(vec![BitGrid8(0x1818000000), BitGrid8(0x20306)]).unwrap()),
         "⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬛⬛⬜⬜⬜\n⬜⬜⬜⬛⬛⬜⬜⬜\n⬜🟥⬜⬜⬜⬜⬜⬜\n🟥🟥⬜⬜⬜⬜⬜⬜\n⬜🟥🟥⬜⬜⬜⬜⬜\n");
-        assert_eq!(format!("{}", PackingGrid8::new(vec![BitGrid8(0x1818000000), BitGrid8(0x20306), BitGrid8(0x203060)])),
+        assert_eq!(format!("{}", PackingGrid8::from_vec(vec![BitGrid8(0x1818000000), BitGrid8(0x20306), BitGrid8(0x203060)]).unwrap()),
         "⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬛⬛⬜⬜⬜\n⬜⬜⬜⬛⬛⬜⬜⬜\n⬜🟥⬜⬜⬜🟦⬜⬜\n🟥🟥⬜⬜🟦🟦⬜⬜\n⬜🟥🟥⬜⬜🟦🟦⬜\n");
+    }
+
+    #[test]
+    fn test_packing_grid8_add() {
+        assert_eq!(PackingGrid8::new().add(BitGrid8(0x1818000000)),
+            PackingGrid8::from_vec(vec![BitGrid8(0x1818000000)]));
+        assert_eq!(PackingGrid8::from_vec(vec![BitGrid8(0x1818000000), BitGrid8(0x20306)]).unwrap().add(BitGrid8(0x203060)),
+            PackingGrid8::from_vec(vec![BitGrid8(0x1818000000), BitGrid8(0x20306), BitGrid8(0x203060)]));
     }
 
     #[test]
@@ -355,7 +379,6 @@ mod test {
 
     #[test]
     fn test_pack_bitgrid8_add_piece() {
-        let center4x4 = BitGrid8(0x3c3c3c3c0000);
         let center2x2 = BitGrid8(0x1818000000);
         let state0 = PackBitGrid8::new(center2x2, PieceBitGrid8::pentomino_map().into_values().collect::<Vec<_>>());
         assert_eq!(state0.piece_counts.len(), 12);
@@ -365,7 +388,7 @@ mod test {
         assert_eq!(state1.piece_counts.len(), 11);
         dbg!(&state1.piece_counts);
         println!("{:}", state1.fill);
-        dbg!(colored_blocks);
+        dbg!(COLORED_BLOCKS);
         assert_eq!(state1.possible_locations[&next_piece].len(), 24);
     }
 
