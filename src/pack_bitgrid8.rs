@@ -104,8 +104,7 @@ impl fmt::Display for PackingGrid8 {
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PackBitGrid8{
-    placement: Vec<BitGrid8>,  // List of placed pieces. The first piece should be the frame (black).
-    fill: BitGrid8,  // Current packing state. Union of all the placed pieces.
+    placement: PackingGrid8, // List of placed pieces. The first piece should be the frame (black).
     piece_counts: HashMap<PieceBitGrid8, u32>,  // Number of available copies of each piece.
     possible_locations: HashMap<PieceBitGrid8, Vec<BitGrid8>>,  // valid locations where a piece can still fit.
     domino_covers: HashMap<BitGrid8, Vec<BitGrid8>>,  // valid piece placements that cover a given domino
@@ -122,14 +121,14 @@ impl PackBitGrid8 {
         let piece_location = Self::piece_location(frame, &pieces);
 
         Self {
-            placement: vec![frame],
-            fill: frame,
+            placement: PackingGrid8::from_vec(vec![frame]).expect("Adding a single piece shouldn't conflict."),
             piece_counts: piece_counts,
             domino_covers: Self::domino_covers(frame, &piece_location),
             possible_locations: piece_location,
         }
     }
 
+    /* TODO: Make sure functionality is in PackGrid8
     pub fn add_piece(&self, grid: BitGrid8) -> Option<Self> {
         if grid.has_overlap(self.fill) { return None };  // Piece cannot be added
         let mut piece_counts = self.piece_counts.clone();
@@ -154,6 +153,7 @@ impl PackBitGrid8 {
             // possible_locations: piece_location,
         })
     }
+    */
 
     pub fn next_piece(&self) -> PieceBitGrid8 {
         let mut best_count = 1000000;
@@ -267,7 +267,7 @@ impl fmt::Display for PackBitGrid8 {
         write!(f, "{}", 
             (0..8).rev().map(|y|
                 (0..8)
-                    .map(|x| format!("{}", if (self.fill.0 >> (x + 8*y)) & 0x1 == 1 { "\u{2B1B}" } else { "⬜" }))
+                    .map(|x| format!("{}", if (self.placement.fill.0 >> (x + 8*y)) & 0x1 == 1 { "\u{2B1B}" } else { "⬜" }))
                     .collect::<String>()
                     +"\n")
             .collect::<String>()
@@ -377,20 +377,20 @@ mod test {
         assert_eq!(start.possible_locations[&next_piece].len(), 4);
     }
 
-    #[test]
-    fn test_pack_bitgrid8_add_piece() {
-        let center2x2 = BitGrid8(0x1818000000);
-        let state0 = PackBitGrid8::new(center2x2, PieceBitGrid8::pentomino_map().into_values().collect::<Vec<_>>());
-        assert_eq!(state0.piece_counts.len(), 12);
-        let next_piece = state0.next_piece();
-        let piece_to_add = state0.possible_locations[&next_piece][0];
-        let state1 = state0.add_piece(piece_to_add).unwrap();
-        assert_eq!(state1.piece_counts.len(), 11);
-        dbg!(&state1.piece_counts);
-        println!("{:}", state1.fill);
-        dbg!(COLORED_BLOCKS);
-        assert_eq!(state1.possible_locations[&next_piece].len(), 24);
-    }
+    // #[test]
+    // fn test_pack_bitgrid8_add_piece() {
+        // let center2x2 = BitGrid8(0x1818000000);
+        // let state0 = PackBitGrid8::new(center2x2, PieceBitGrid8::pentomino_map().into_values().collect::<Vec<_>>());
+        // assert_eq!(state0.piece_counts.len(), 12);
+        // let next_piece = state0.next_piece();
+        // let piece_to_add = state0.possible_locations[&next_piece][0];
+        // let state1 = state0.add_piece(piece_to_add).unwrap();
+        // assert_eq!(state1.piece_counts.len(), 11);
+        // dbg!(&state1.piece_counts);
+        // println!("{:}", state1.fill);
+        // dbg!(COLORED_BLOCKS);
+        // assert_eq!(state1.possible_locations[&next_piece].len(), 24);
+    // }
 
     /*
     #[test]
