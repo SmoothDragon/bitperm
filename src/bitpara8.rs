@@ -10,7 +10,8 @@ use arrayvec::*;
 use crate::bitlib::swap_mask_shift_u64;
 
 // -----------------------------------------------------------------
-// 2D geometric operations on an hexagonal grid with side length 4
+// 2D geometric operations on an hexagonal grid in a parallelogram
+// with side length 8.
 //
 // 8x8 square space represented by the 64 bits in a u64
 // Position at (x,y) = x + 8*y
@@ -20,14 +21,14 @@ use crate::bitlib::swap_mask_shift_u64;
 // Rotations will happen from the center of the hexagon.
 // -----------------------------------------------------------------
 //
-// ........
-// ...XXXX.
-// ..XXXXX.
-// .XXXXXX.
-// XXXXXXX.
-// XXXXXX..
-// XXXXX...
-// XXXX....
+// 77777777    7 7 7 7 7 7 7 7
+// 66666666     6 6 6 6 6 6 6 6
+// 55555555      5 5 5 5 5 5 5 5
+// 44444444       4 4 4 4 4 4 4 4
+// 33333333   =>   3 3 3 3 3 3 3 3
+// 22222222         2 2 2 2 2 2 2 2
+// 11111111          1 1 1 1 1 1 1 1
+// 00000000           0 0 0 0 0 0 0 0
 //
 // -----------------------------------------------------------------
 
@@ -39,15 +40,15 @@ use crate::bitlib::swap_mask_shift_u64;
 #[derive(Copy, Clone, Eq, PartialEq, Hash, PartialOrd, Ord,
     BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign, 
     )]
-pub struct BitHex8(pub u64);
+pub struct BitPara8(pub u64);
 
-impl fmt::Debug for BitHex8 {
+impl fmt::Debug for BitPara8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "BitGrid8({:#010x})", self.0)
     } 
 } 
 
-impl fmt::Display for BitHex8 {
+impl fmt::Display for BitPara8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{}", 
             (0..8).rev().map(|y|
@@ -60,19 +61,21 @@ impl fmt::Display for BitHex8 {
     } 
 } 
 
-pub const HEX4: u64 = 0x78_7c7e_7f3f_1f0f;
-pub const FULL: BitHex8 = BitHex8(0x78_7c7e_7f3f_1f0f);
-pub const ASTERISK: BitHex8 = BitHex8(0x4828187f0c0a09);
-pub const THREE_HEX: BitHex8 = BitHex8(0x6c7e360c0e06);
-pub const LARGE_Z: BitHex8 = BitHex8(0x78_0808_0808_080f);
+pub const HEX4: BitPara8 = BitPara8(0x78_7c7e_7f3f_1f0f);
+pub const FULL: BitPara8 = BitPara8(0xffff_ffff_ffff_ffff);
+pub const ASTERISK: BitPara8 = BitPara8(0x4828187f0c0a09);
+pub const THREE_HEX: BitPara8 = BitPara8(0x6c7e360c0e06);
+pub const LARGE_X: BitPara8 = BitPara8(0x8142_2418_1824_4281);
+pub const LARGE_Z: BitPara8 = BitPara8(0xff40_2010_0804_02ff);
+pub const SLASH: BitPara8 = BitPara8(0x8040_2010_0804_0201);
 
-impl BitHex8 {
-    /// Do two BitHex8 objects overlap?
+impl BitPara8 {
+    /// Do two BitPara8 objects overlap?
     pub fn has_overlap(self, other: Self) -> bool {
         self.0 & other.0 != 0
     }
 
-    /// Does the BitHex8 contain nothing?
+    /// Does the BitPara8 contain nothing?
     #[inline(always)]
     pub fn is_empty(self) -> bool {
         self.0 == 0
@@ -84,41 +87,64 @@ impl BitHex8 {
         let mut vec = ArrayVec::<Self, 4>::new();
         let mut x = self;
         vec.push(x);
-        for _ in 0..2 { x = x.rotate_cc(); vec.push(x); }
+        for _ in 0..2 { x = x.rotate_180(); vec.push(x); }
         vec.sort_unstable();
         let symmetries = vec.partition_dedup().0.len();  // Move duplicates to the end.
         vec.truncate(symmetries);
         vec
     }
 
-    /// Rotate 60 degrees in the counter-clockwise direction
-    pub fn rotate_cc(self) -> Self { 
-        let mut grid: u64 = BitGrid8(self.0).rotate_cc().0.unbounded_shr(4);
-        // Slide pieces back y-axis after using the BitGrid8 rotation
-        grid = (grid & 0x0fff_ffff) ^ (grid.unbounded_shl(4) & 0x00ff_ffff_0000_0000);
-        grid = (grid & 0xffff_0000_0fff) ^ (grid.unbounded_shl(2) & 0x00ff_0000_ffff_0000);
-        grid = (grid & 0xff_00ff_003f_000f) ^ (grid.unbounded_shl(1) & 0x0000_ff00_ff00_ff00);
+    /// Rotate 180 degrees
+    #[inline]
+    pub fn rotate_180(self) -> Self { 
+        // let mut grid: u64 = BitGrid8(self.0).rotate_180().0.unbounded_shr(4);
+        let mut grid: u64 = self.0;
+        // Swap 4x4 squares
+        swap_mask_shift_u64(&mut grid, 0x0f0f_0f0f, 36);
+        swap_mask_shift_u64(&mut grid, 0xf0f0_f0f0, 28);
+        // Swap 2x2 squares
+        swap_mask_shift_u64(&mut grid, 0x0000_3333_0000_3333, 18);
+        swap_mask_shift_u64(&mut grid, 0x0000_cccc_0000_cccc, 14);
+        // Swap 1x1 squares
+        swap_mask_shift_u64(&mut grid, 0x0055_0055_0055_0055, 9);
+        swap_mask_shift_u64(&mut grid, 0x00aa_00aa_00aa_00aa, 7);
         Self(grid)
-    }
-
-    pub fn rotate(self) -> Self { 
-        todo!();
-        // BitGrid8(square)
     }
 
     // Flip along x-axis. For 2D this is the same as mirror.
     pub fn flip_x(self) -> Self { 
         let mut grid = self.0;
-        // println!("0\n{}", Self(grid));
-        swap_mask_shift_u64(&mut grid, 0xf, 51);
-        // println!("1\n{}", Self(grid));
-        swap_mask_shift_u64(&mut grid, 0x1f00, 34);
-        // println!("2\n{}", Self(grid));
-        swap_mask_shift_u64(&mut grid, 0x3f0000, 17);
-        // println!("3\n{}", Self(grid));
+        swap_mask_shift_u64(&mut grid, 0xffff_ffff, 32);
+        swap_mask_shift_u64(&mut grid, 0xffff_0000_ffff, 16);
+        swap_mask_shift_u64(&mut grid, 0x00ff_00ff_00ff_00ff, 8);
         Self(grid)
     }
 
+    // Flip along (1, 1) vector.
+    pub fn flip_ne(self) -> Self { 
+        let mut grid = self.0;
+        // Swap 4x4 squares
+        swap_mask_shift_u64(&mut grid, 0x0f0f_0f0f, 36);
+        // Swap 2x2 squares
+        swap_mask_shift_u64(&mut grid, 0x0000_3333_0000_3333, 18);
+        // Swap 1x1 squares
+        swap_mask_shift_u64(&mut grid, 0x0055_0055_0055_0055, 9);
+        Self(grid)
+    }
+
+    // Flip along (-1, 1) vector.
+    pub fn flip_nw(self) -> Self { 
+        let mut grid = self.0;
+        // Swap 4x4 squares
+        swap_mask_shift_u64(&mut grid, 0xf0f0_f0f0, 28);
+        // Swap 2x2 squares
+        swap_mask_shift_u64(&mut grid, 0x0000_cccc_0000_cccc, 14);
+        // Swap 1x1 squares
+        swap_mask_shift_u64(&mut grid, 0x00aa_00aa_00aa_00aa, 7);
+        Self(grid)
+    }
+
+    /*
     /// Shift a piece in the 8-grid towards the origin so that it touches the x and y axes
     pub fn shift_to_origin(self) -> Self {
         let mut shape = self.0;
@@ -132,7 +158,7 @@ impl BitHex8 {
         Self(shape)
     }
 
-    /// Find the (x,y) bounding box of a BitHex8.
+    /// Find the (x,y) bounding box of a BitPara8.
     /// The box includes the origin and all nonzero squares.
     pub fn bounding_box(self) -> (u32, u32) {
         let mut shape = self.0;
@@ -145,7 +171,6 @@ impl BitHex8 {
         (len_x as u32, len_y as u32)
     }
 
-    /*
     /// Shifts off the side are lost.
     pub fn shift_x(self, shift: i32) -> Self { 
         if shift > 7 || shift < -7 { return Self(0) };
@@ -224,38 +249,63 @@ mod test {
     fn test_bithex8_display() {
         println!("{}", FULL);
         assert_eq!(format!("{}", FULL),
-            "⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜🟥🟥🟥🟥⬜\n⬜⬜🟥🟥🟥🟥🟥⬜\n⬜🟥🟥🟥🟥🟥🟥⬜\n🟥🟥🟥🟥🟥🟥🟥⬜\n🟥🟥🟥🟥🟥🟥⬜⬜\n🟥🟥🟥🟥🟥⬜⬜⬜\n🟥🟥🟥🟥⬜⬜⬜⬜\n");
-        assert_eq!(format!("{}", BitHex8(0x1)), 
+        "🟥🟥🟥🟥🟥🟥🟥🟥\n🟥🟥🟥🟥🟥🟥🟥🟥\n🟥🟥🟥🟥🟥🟥🟥🟥\n🟥🟥🟥🟥🟥🟥🟥🟥\n🟥🟥🟥🟥🟥🟥🟥🟥\n🟥🟥🟥🟥🟥🟥🟥🟥\n🟥🟥🟥🟥🟥🟥🟥🟥\n🟥🟥🟥🟥🟥🟥🟥🟥\n");
+        assert_eq!(format!("{}", BitPara8(0x1)), 
             "⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n🟥⬜⬜⬜⬜⬜⬜⬜\n");
-        assert_eq!(format!("{}", FULL.rotate_cc()),
-            "⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜🟥🟥🟥🟥⬜\n⬜⬜🟥🟥🟥🟥🟥⬜\n⬜🟥🟥🟥🟥🟥🟥⬜\n🟥🟥🟥🟥🟥🟥🟥⬜\n🟥🟥🟥🟥🟥🟥⬜⬜\n🟥🟥🟥🟥🟥⬜⬜⬜\n🟥🟥🟥🟥⬜⬜⬜⬜\n");
     }
 
     #[test]
-    fn test_bithex8_rotate_cc() {
-        // Has 6-fold rotational symmetry
-        assert_eq!(FULL, FULL.rotate_cc());
-        assert_eq!(ASTERISK, ASTERISK.rotate_cc());
-
-        // Has 3-fold rotational symmetry
-        assert_ne!(THREE_HEX, THREE_HEX.rotate_cc());
-        assert_eq!(THREE_HEX, THREE_HEX.rotate_cc().rotate_cc());
-
+    fn test_bitpara_rotate_180() {
         // Has 2-fold rotational symmetry
+        assert_eq!(FULL, FULL.rotate_180());
         println!("{}", LARGE_Z);
-        assert_ne!(LARGE_Z, LARGE_Z.rotate_cc());
-        assert_ne!(LARGE_Z, LARGE_Z.rotate_cc().rotate_cc());
-        assert_eq!(LARGE_Z, LARGE_Z.rotate_cc().rotate_cc().rotate_cc());
-        // let bottom = BitHex8(0x1f0f);
-        // println!("{}", bottom);
-        // println!("{}", bottom.rotate_cc().rotate_cc().rotate_cc());
-        // assert_eq!(bottom, bottom.rotate_cc());
+        assert_eq!(LARGE_Z, LARGE_Z.rotate_180());
+
+        // Must rotate twice
+        assert_ne!(ASTERISK, ASTERISK.rotate_180());
+        assert_eq!(ASTERISK, ASTERISK.rotate_180().rotate_180());
     }
 
     #[test]
-    fn test_bithex8_flip_x() {
-        println!("{}", ASTERISK);
-        println!("{}", ASTERISK.flip_x());
-        assert_eq!(ASTERISK, ASTERISK.flip_x());
+    fn test_bitpara_flip_x() {
+        assert_eq!(FULL, FULL.flip_x());
+        assert_eq!(LARGE_X, LARGE_X.flip_x());
+
+        // Must flip twice
+        assert_ne!(ASTERISK, ASTERISK.flip_x());
+        assert_eq!(ASTERISK, ASTERISK.flip_x().flip_x());
+        assert_ne!(THREE_HEX, THREE_HEX.flip_x());
+        assert_eq!(THREE_HEX, THREE_HEX.flip_x().flip_x());
+        assert_ne!(SLASH, SLASH.flip_x());
+        assert_eq!(SLASH, SLASH.flip_x().flip_x());
+
     }
+
+    #[test]
+    fn test_bitpara_flip_ne() {
+        assert_eq!(FULL, FULL.flip_ne());
+        assert_eq!(LARGE_X, LARGE_X.flip_ne());
+        assert_eq!(SLASH, SLASH.flip_ne());
+
+        // Must flip twice
+        assert_ne!(ASTERISK, ASTERISK.flip_ne());
+        assert_eq!(ASTERISK, ASTERISK.flip_ne().flip_ne());
+        assert_ne!(THREE_HEX, THREE_HEX.flip_ne());
+        assert_eq!(THREE_HEX, THREE_HEX.flip_ne().flip_ne());
+    }
+
+    #[test]
+    fn test_bitpara_flip_nw() {
+        assert_eq!(FULL, FULL.flip_nw());
+        assert_eq!(LARGE_X, LARGE_X.flip_nw());
+        assert_eq!(SLASH, SLASH.flip_nw());
+        assert_eq!(ASTERISK, ASTERISK.flip_nw());
+
+        // Must flip twice
+        assert_ne!(LARGE_Z, LARGE_Z.flip_nw());
+        assert_eq!(LARGE_Z, LARGE_Z.flip_nw().flip_nw());
+        assert_ne!(THREE_HEX, THREE_HEX.flip_nw());
+        assert_eq!(THREE_HEX, THREE_HEX.flip_nw().flip_nw());
+    }
+
 }
