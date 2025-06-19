@@ -179,6 +179,12 @@ impl BitGrid8 {
         ])
     }
 
+    /// Find all corners 
+    pub fn find_corners(self) -> BitGrid8 {
+        (self.shift_x(-1) | 0x8080_8080_8080_8080 | self.shift_x(1) | 0x0101_0101_0101_0101) 
+            & (self.shift_y(-1) | 0xff00_0000_0000_0000 | self.shift_y(1) | 0xff) & !self
+    }
+
     /// Find corners in the upper right (north east)
     pub fn find_corners_ne(self) -> BitGrid8 {
         (self.shift_x(-1) | 0x8080_8080_8080_8080) & (self.shift_y(-1) | 0xff00_0000_0000_0000) & !self
@@ -529,6 +535,20 @@ mod test {
 
         let pentomino = BitGrid8::pentomino_map();
         assert_eq!((*(&pentomino[&'F']) << 24).shift_to_origin(), pentomino[&'F']);
+    }
+
+    #[test]
+    fn test_find_corners() {
+        assert_eq!(FULL.find_corners(), BitGrid8(0));
+        println!("{}", BACKSLASH.find_corners());
+        assert_eq!(UPPER_RIGHT.find_corners(), BitGrid8(0x900000080000081));
+        assert_eq!(BACKSLASH.find_corners(), BitGrid8(0x82050a142850a041));
+        assert_eq!(CENTER_XY.find_corners(), BitGrid8(0xa500a50000a500a5));
+
+        let pentomino = BitGrid8::pentomino_map();
+        println!("{:}", pentomino[&'F'].find_corners());
+        println!("{:}", pentomino[&'F']);
+        assert_eq!((pentomino[&'F']).find_corners(), BitGrid8(0x8100000000010489));
     }
 
     #[test]
