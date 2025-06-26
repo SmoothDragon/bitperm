@@ -170,12 +170,12 @@ impl BitGrid8 {
             ('N', BitGrid8(0xe03)),
             ('P', BitGrid8(0x10303)),
             ('T', BitGrid8(0x20207)),
-            ('U', BitGrid8(0x705)),
-            ('V', BitGrid8(0x70101)),
-            ('W', BitGrid8(0x60301)),
+            ('U', BitGrid8(0x507)),
+            ('V', BitGrid8(0x10107)),
+            ('W', BitGrid8(0x10306)),
             ('X', BitGrid8(0x20702)),
-            ('Y', BitGrid8(0xf04)),
-            ('Z', BitGrid8(0x60203)),
+            ('Y', BitGrid8(0x40f)),
+            ('Z', BitGrid8(0x30206)),
         ])
     }
 
