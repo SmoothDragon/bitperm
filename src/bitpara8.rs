@@ -1,5 +1,5 @@
 use std::fmt;
-use std::ops::*;
+// use std::ops::*;
 use std::collections::HashMap;
 
 use crate::bitgrid8::BitGrid8;

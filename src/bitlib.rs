@@ -74,6 +74,29 @@ pub mod cu27 {
     pub const CENTER_ALL: BitCube3 = BitCube3(CENTER_X.0 | CENTER_Y.0 | CENTER_Z.0);
 }
 
+/// Useful constants for 3-cube transformations
+pub mod bg8 {
+    use crate::bitgrid8::BitGrid8;
+
+    pub const ALL: u64 = 0xffff_ffff_ffff_ffff;
+    pub const CENTER_XY: BitGrid8 = BitGrid8(0x1818_18ff_ff18_1818);
+    pub const FULL: BitGrid8 = BitGrid8(0xffff_ffff_ffff_ffff_u64);
+    pub const ORDER: BitGrid8 = BitGrid8(0xfedc_ba98_7654_3210_u64);
+    pub const LOWER_LEFT: BitGrid8 = BitGrid8(0x0f0f_0f0f_u64);
+    pub const LOWER_RIGHT: BitGrid8 = BitGrid8(0xf0f0_f0f0_u64);
+    pub const UPPER_LEFT: BitGrid8 = BitGrid8(0x0f0f_0f0f_0000_0000_u64);
+    pub const UPPER_RIGHT: BitGrid8 = BitGrid8(0xf0f0_f0f0_0000_0000_u64);
+
+    pub const HIGHFIVE: BitGrid8 = BitGrid8(0xff80ff01ff);
+    pub const SMALL_FIVE: BitGrid8 = BitGrid8(0x00f080f010f);
+    pub const CHECKER2: BitGrid8 = BitGrid8(0x0c0c_0303);
+    pub const SLASH:BitGrid8 = BitGrid8(0x8040201008040201);
+    pub const BACKSLASH:BitGrid8 = BitGrid8(0x0102040810204080);
+    pub const BORDER:BitGrid8 = BitGrid8(0xff81_8181_8181_81ff);
+    pub const IDENTITY:BitGrid8 = BitGrid8(0x8040201008040201);
+    pub const ANTIDIAG:BitGrid8 = BitGrid8(0x0102040810204080);
+}
+
 #[cfg(test)]
 mod test {
     use super::*;
