@@ -6,7 +6,7 @@ use derive_more::*;
 use arrayvec::*;
 
 use crate::bitlib::swap_mask_shift_u64;
-use crate::bitlib::bg8;
+use crate::bitlib::*;
 
 // -----------------------------------------------------------------
 // 2D geometric operations on an 8x8 grid
@@ -117,6 +117,12 @@ impl fmt::Display for BitGrid8 {
     } 
 } 
 
+impl From<u64> for BitGrid8 {
+    fn from(raw_grid: u64) -> Self {
+        BitGrid8(raw_grid)
+    }
+}
+
 // Beware using automatic deref
 // impl core::ops::Deref for BitGrid8 {
     // type Target = u64;
@@ -147,18 +153,18 @@ impl BitGrid8 {
     /// Diagonal presentations are rotated 45 degrees clockwise.
     pub fn pentomino_map() -> HashMap::<char, BitGrid8> {
         HashMap::<char, BitGrid8>::from([
-            ('F', BitGrid8(0x20306)),
-            ('I', BitGrid8(0x101010101)),
-            ('L', BitGrid8(0x3010101)),
-            ('N', BitGrid8(0xe03)),
-            ('P', BitGrid8(0x10303)),
-            ('T', BitGrid8(0x20207)),
-            ('U', BitGrid8(0x507)),
-            ('V', BitGrid8(0x10107)),
-            ('W', BitGrid8(0x10306)),
-            ('X', BitGrid8(0x20702)),
-            ('Y', BitGrid8(0x40f)),
-            ('Z', BitGrid8(0x30206)),
+            ('F', BitGrid8::from(0x20306)),
+            ('I', BitGrid8::from(0x101010101)),
+            ('L', BitGrid8::from(0x3010101)),
+            ('N', BitGrid8::from(0xe03)),
+            ('P', BitGrid8::from(0x10303)),
+            ('T', BitGrid8::from(0x20207)),
+            ('U', BitGrid8::from(0x507)),
+            ('V', BitGrid8::from(0x10107)),
+            ('W', BitGrid8::from(0x10306)),
+            ('X', BitGrid8::from(0x20702)),
+            ('Y', BitGrid8::from(0x40f)),
+            ('Z', BitGrid8::from(0x30206)),
         ])
     }
 
@@ -204,7 +210,7 @@ impl BitGrid8 {
 
     /// Return the NSEW border of a BitGrid8. This includes the border of the 8x8 square.
     pub fn border(self) -> Self {
-        (self | self.shift_x(1) | self.shift_x(-1) | self.shift_y(1) | self.shift_y(-1) | bg8::BORDER) ^ self
+        (self | self.shift_x(1) | self.shift_x(-1) | self.shift_y(1) | self.shift_y(-1) | BitGrid8::from(BORDER)) ^ self
     }
 
     /// Do two BitGrid8 objects overlap?
@@ -221,7 +227,7 @@ impl BitGrid8 {
     /// Return the king move border of a BitGrid8. This includes the border of the 8x8 square.
     pub fn border8(self) -> Self {
         let mut grid = self | self.shift_x(1) | self.shift_x(-1);
-        grid |= grid.shift_y(1) | grid.shift_y(-1) | bg8::BORDER;
+        grid |= grid.shift_y(1) | grid.shift_y(-1) | BitGrid8::from(BORDER);
         grid ^ self
     }
 
@@ -268,10 +274,10 @@ impl BitGrid8 {
     #[inline]
     pub fn count_2x2_antimask(self, antimask: u64) -> u32 {
         const RIGHT: u64 = 0xfefe_fefe_fefe_fefe_u64;
-        BitGrid8((self.0.unbounded_shl(9) & RIGHT) ^ antimask).count_2x2_blocks()
-            + BitGrid8((self.0.unbounded_shl(1) & RIGHT) ^ antimask).count_2x2_blocks()
-            + BitGrid8(self.0.unbounded_shl(8) ^ antimask).count_2x2_blocks()
-            + (self ^ BitGrid8(antimask)).count_2x2_blocks()
+        BitGrid8::from((self.0.unbounded_shl(9) & RIGHT) ^ antimask).count_2x2_blocks()
+            + BitGrid8::from((self.0.unbounded_shl(1) & RIGHT) ^ antimask).count_2x2_blocks()
+            + BitGrid8::from(self.0.unbounded_shl(8) ^ antimask).count_2x2_blocks()
+            + (self ^ BitGrid8::from(antimask)).count_2x2_blocks()
     }
 
 
@@ -281,11 +287,11 @@ impl BitGrid8 {
     /// ..
     #[inline]
     pub fn count_upper_right_2x2_blocks(self) -> u32 {
-        println!("{:}", BitGrid8((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ 0x55ff_55ff_55ff_55ff_u64));
-        BitGrid8((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ 0x55ff_55ff_55ff_55ff_u64).count_2x2_blocks()
-            + BitGrid8((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ 0x55ff_55ff_55ff_55ff_u64).count_2x2_blocks()
-            + BitGrid8(self.0.unbounded_shl(8) ^ 0x55ff_55ff_55ff_55ff_u64).count_2x2_blocks()
-            + (self ^ BitGrid8(0x55ff_55ff_55ff_55ff_u64)).count_2x2_blocks()
+        println!("{:}", BitGrid8::from((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ 0x55ff_55ff_55ff_55ff_u64));
+        BitGrid8::from((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ 0x55ff_55ff_55ff_55ff_u64).count_2x2_blocks()
+            + BitGrid8::from((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ 0x55ff_55ff_55ff_55ff_u64).count_2x2_blocks()
+            + BitGrid8::from(self.0.unbounded_shl(8) ^ 0x55ff_55ff_55ff_55ff_u64).count_2x2_blocks()
+            + (self ^ BitGrid8::from(0x55ff_55ff_55ff_55ff_u64)).count_2x2_blocks()
     }
 
     /// Count lower left 2x2 blocks
@@ -294,10 +300,10 @@ impl BitGrid8 {
     #[inline]
     pub fn count_lower_left_2x2_blocks(self) -> u32 {
         const ANTIMASK: u64 = 0x0055_0055_0055_0055_u64;
-        BitGrid8((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ ANTIMASK).count_2x2_blocks()
-            + BitGrid8((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ ANTIMASK).count_2x2_blocks()
-            + BitGrid8(self.0.unbounded_shl(8) ^ ANTIMASK).count_2x2_blocks()
-            + (self ^ BitGrid8(ANTIMASK)).count_2x2_blocks()
+        BitGrid8::from((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ ANTIMASK).count_2x2_blocks()
+            + BitGrid8::from((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ ANTIMASK).count_2x2_blocks()
+            + BitGrid8::from(self.0.unbounded_shl(8) ^ ANTIMASK).count_2x2_blocks()
+            + (self ^ BitGrid8::from(ANTIMASK)).count_2x2_blocks()
     }
 
 
@@ -307,10 +313,10 @@ impl BitGrid8 {
     #[inline]
     pub fn count_antidiagonal_2x2_blocks(self) -> u32 {
         const ANTIMASK: u64 = 0x55aa_55aa_55aa_55aa_u64;
-        BitGrid8((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ ANTIMASK).count_2x2_blocks()
-            + BitGrid8((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ ANTIMASK).count_2x2_blocks()
-            + BitGrid8(self.0.unbounded_shl(8) ^ ANTIMASK).count_2x2_blocks()
-            + (self ^ BitGrid8(ANTIMASK)).count_2x2_blocks()
+        BitGrid8::from((self.0.unbounded_shl(9) & 0xfefe_fefe_fefe_fe00_u64) ^ ANTIMASK).count_2x2_blocks()
+            + BitGrid8::from((self.0.unbounded_shl(1) & 0xfefe_fefe_fefe_fefe_u64) ^ ANTIMASK).count_2x2_blocks()
+            + BitGrid8::from(self.0.unbounded_shl(8) ^ ANTIMASK).count_2x2_blocks()
+            + (self ^ BitGrid8::from(ANTIMASK)).count_2x2_blocks()
     }
 
 
@@ -363,7 +369,7 @@ impl BitGrid8 {
         swap_mask_shift_u64(&mut square, 0x0055_0055_0055_0055_u64, 9);
         // Within 2x2 squares swap top <-> bottom rows
         swap_mask_shift_u64(&mut square, 0x00ff_00ff_00ff_00ff_u64, 8);
-        BitGrid8(square)
+        BitGrid8::from(square)
     }
 
     /// 2x2x2 Example: 01 23 | 45 67 => 20 31 | 64 75 
@@ -386,7 +392,7 @@ impl BitGrid8 {
         swap_mask_shift_u64(&mut square, 0x00ff_00ff_00ff_00ff_u64, 8);
         // Within 2x2 squares swap diagonal entries
         swap_mask_shift_u64(&mut square, 0x0055_0055_0055_0055_u64, 9);
-        BitGrid8(square)
+        BitGrid8::from(square)
     }
 
     // Flip along x-axis. For 2D this is the same as mirror.
@@ -398,7 +404,7 @@ impl BitGrid8 {
         swap_mask_shift_u64(&mut square, 0xffff_0000_ffff_u64, 16);
         // Swap eight top <-> bottom rows
         swap_mask_shift_u64(&mut square, 0x00ff_00ff_00ff_00ff_u64, 8);
-        BitGrid8(square)
+        BitGrid8::from(square)
     }
 
     /// Shift a piece in the 8-grid towards the origin so that it touches the x and y axes
@@ -435,9 +441,9 @@ impl BitGrid8 {
         let shift: u32 = shift.unsigned_abs();
         let mask: u64 = ((1_u64 << (8_u32-shift)) - 1_u64) * 0x0101_0101_0101_0101_u64;
         if sign {
-            BitGrid8((mask & self.0).unbounded_shl(shift))
+            BitGrid8::from((mask & self.0).unbounded_shl(shift))
         } else {
-            BitGrid8(mask & self.0.unbounded_shr(shift))
+            BitGrid8::from(mask & self.0.unbounded_shr(shift))
         }
     }
 
@@ -460,9 +466,9 @@ impl BitGrid8 {
         // let mask: u64 = ((1_u64 << (8_u32-shift)) - 1_u64) * 0x0101_0101_0101_0101_u64;
         let mask: u64 = 0xffff_ffff_ffff_ffff_u64.unbounded_shr(shift);
         if sign {
-            BitGrid8((mask & self.0).unbounded_shl(shift))
+            BitGrid8::from((mask & self.0).unbounded_shl(shift))
         } else {
-            BitGrid8(mask & self.0.unbounded_shr(shift))
+            BitGrid8::from(mask & self.0.unbounded_shr(shift))
         }
     }
 
@@ -499,23 +505,22 @@ impl BitGrid8 {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::bg8;
     
     #[test]
     fn test_bitgrid8_display() {
-        assert_eq!(format!("{}", bg8::BACKSLASH),
+        assert_eq!(format!("{}", BitGrid8::from(BACKSLASH)),
 "🟥⬜⬜⬜⬜⬜⬜⬜\n⬜🟥⬜⬜⬜⬜⬜⬜\n⬜⬜🟥⬜⬜⬜⬜⬜\n⬜⬜⬜🟥⬜⬜⬜⬜\n⬜⬜⬜⬜🟥⬜⬜⬜\n⬜⬜⬜⬜⬜🟥⬜⬜\n⬜⬜⬜⬜⬜⬜🟥⬜\n⬜⬜⬜⬜⬜⬜⬜🟥\n");
-        assert_eq!(format!("{}", BitGrid8(0x1)), 
+        assert_eq!(format!("{}", BitGrid8::from(0x1)), 
             "⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n🟥⬜⬜⬜⬜⬜⬜⬜\n");
     }
 
     #[test]
     fn test_shift_to_origin() {
-        assert_eq!(bg8::FULL.shift_to_origin(), bg8::FULL);
-        assert_eq!(bg8::UPPER_RIGHT.shift_to_origin(), bg8::LOWER_LEFT);
-        assert_eq!(bg8::BACKSLASH.shift_to_origin(), bg8::BACKSLASH);
-        assert_eq!(bg8::CENTER_XY.shift_to_origin(), bg8::CENTER_XY);
-        assert_eq!(BitGrid8(0xf00f00).shift_to_origin(), BitGrid8(0xf00f));
+        assert_eq!(BitGrid8::from(FULL).shift_to_origin(), BitGrid8::from(FULL));
+        assert_eq!(BitGrid8::from(UPPER_RIGHT).shift_to_origin(), BitGrid8::from(LOWER_LEFT));
+        assert_eq!(BitGrid8::from(BACKSLASH).shift_to_origin(), BitGrid8::from(BACKSLASH));
+        assert_eq!(BitGrid8::from(CENTER_XY).shift_to_origin(), BitGrid8::from(CENTER_XY));
+        assert_eq!(BitGrid8::from(0xf00f00).shift_to_origin(), BitGrid8::from(0xf00f));
 
         let pentomino = BitGrid8::pentomino_map();
         assert_eq!((*(&pentomino[&'F']) << 24).shift_to_origin(), pentomino[&'F']);
@@ -523,208 +528,208 @@ mod test {
 
     #[test]
     fn test_find_corners() {
-        assert_eq!(bg8::FULL.find_corners(), BitGrid8(0));
-        println!("{}", bg8::BACKSLASH.find_corners());
-        assert_eq!(bg8::UPPER_RIGHT.find_corners(), BitGrid8(0x900000080000081));
-        assert_eq!(bg8::BACKSLASH.find_corners(), BitGrid8(0x82050a142850a041));
-        assert_eq!(bg8::CENTER_XY.find_corners(), BitGrid8(0xa500a50000a500a5));
+        assert_eq!(BitGrid8::from(FULL).find_corners(), BitGrid8::from(0));
+        println!("{}", BitGrid8::from(BACKSLASH).find_corners());
+        assert_eq!(BitGrid8::from(UPPER_RIGHT).find_corners(), BitGrid8::from(0x900000080000081));
+        assert_eq!(BitGrid8::from(BACKSLASH).find_corners(), BitGrid8::from(0x82050a142850a041));
+        assert_eq!(BitGrid8::from(CENTER_XY).find_corners(), BitGrid8::from(0xa500a50000a500a5));
 
         let pentomino = BitGrid8::pentomino_map();
         println!("{:}", pentomino[&'F'].find_corners());
         println!("{:}", pentomino[&'F']);
-        assert_eq!((pentomino[&'F']).find_corners(), BitGrid8(0x8100000000010489));
+        assert_eq!((pentomino[&'F']).find_corners(), BitGrid8::from(0x8100000000010489));
     }
 
     #[test]
     fn test_find_corner_sw() {
-        assert_eq!(bg8::FULL.find_corners_sw(), BitGrid8(0));
-        println!("{}", bg8::UPPER_RIGHT.find_corners_sw());
-        assert_eq!(bg8::UPPER_RIGHT.find_corners_sw(), BitGrid8(0x1));
-        assert_eq!(bg8::BACKSLASH.find_corners_sw(), BitGrid8(0x204081020408001));
-        assert_eq!(bg8::CENTER_XY.find_corners_sw(), BitGrid8(0x210000000021));
+        assert_eq!(BitGrid8::from(FULL).find_corners_sw(), BitGrid8::from(0));
+        println!("{}", BitGrid8::from(UPPER_RIGHT).find_corners_sw());
+        assert_eq!(BitGrid8::from(UPPER_RIGHT).find_corners_sw(), BitGrid8::from(0x1));
+        assert_eq!(BitGrid8::from(BACKSLASH).find_corners_sw(), BitGrid8::from(0x204081020408001));
+        assert_eq!(BitGrid8::from(CENTER_XY).find_corners_sw(), BitGrid8::from(0x210000000021));
 
         let pentomino = BitGrid8::pentomino_map();
         println!("{:}", pentomino[&'F'].find_corners_sw());
         println!("{:}", pentomino[&'F']);
-        assert_eq!((pentomino[&'F']).find_corners_sw(), BitGrid8(0x00010409));
+        assert_eq!((pentomino[&'F']).find_corners_sw(), BitGrid8::from(0x00010409));
     }
 
     #[test]
     fn test_find_corner_nw() {
-        assert_eq!(bg8::FULL.find_corners_nw(), BitGrid8(0));
-        println!("{}", bg8::UPPER_RIGHT);
-        println!("{}", bg8::UPPER_RIGHT.find_corners_nw());
-        assert_eq!(bg8::UPPER_RIGHT.find_corners_nw(), BitGrid8(0x0100_0000_0000_0000));
-        assert_eq!(bg8::BACKSLASH.find_corners_nw(), BitGrid8(0x201000000000000));
-        println!("{}", bg8::CENTER_XY.find_corners_nw());
-        assert_eq!(bg8::CENTER_XY.find_corners_nw(), BitGrid8(0x210000000021_0000));
+        assert_eq!(BitGrid8::from(FULL).find_corners_nw(), BitGrid8::from(0));
+        println!("{}", BitGrid8::from(UPPER_RIGHT));
+        println!("{}", BitGrid8::from(UPPER_RIGHT).find_corners_nw());
+        assert_eq!(BitGrid8::from(UPPER_RIGHT).find_corners_nw(), BitGrid8::from(0x0100_0000_0000_0000));
+        assert_eq!(BitGrid8::from(BACKSLASH).find_corners_nw(), BitGrid8::from(0x201000000000000));
+        println!("{}", BitGrid8::from(CENTER_XY).find_corners_nw());
+        assert_eq!(BitGrid8::from(CENTER_XY).find_corners_nw(), BitGrid8::from(0x210000000021_0000));
 
         let pentomino = BitGrid8::pentomino_map();
         println!("{:}", pentomino[&'F'].find_corners_nw());
         println!("{:}", pentomino[&'F']);
-        assert_eq!((pentomino[&'F']).find_corners_nw(), BitGrid8(0x100000000000001));
+        assert_eq!((pentomino[&'F']).find_corners_nw(), BitGrid8::from(0x100000000000001));
     }
 
     #[test]
     fn test_find_corner_se() {
-        assert_eq!(bg8::FULL.find_corners_se(), BitGrid8(0));
-        println!("{}", bg8::UPPER_RIGHT.find_corners_se());
-        assert_eq!(bg8::UPPER_RIGHT.find_corners_se(), BitGrid8(0x80));
-        assert_eq!(bg8::BACKSLASH.find_corners_se(), BitGrid8(0x08040));
-        assert_eq!(bg8::CENTER_XY.find_corners_se(), BitGrid8(0x840000000084));
+        assert_eq!(BitGrid8::from(FULL).find_corners_se(), BitGrid8::from(0));
+        println!("{}", BitGrid8::from(UPPER_RIGHT).find_corners_se());
+        assert_eq!(BitGrid8::from(UPPER_RIGHT).find_corners_se(), BitGrid8::from(0x80));
+        assert_eq!(BitGrid8::from(BACKSLASH).find_corners_se(), BitGrid8::from(0x08040));
+        assert_eq!(BitGrid8::from(CENTER_XY).find_corners_se(), BitGrid8::from(0x840000000084));
 
         let pentomino = BitGrid8::pentomino_map();
         println!("{:}", pentomino[&'F'].find_corners_se());
         println!("{:}", pentomino[&'F']);
-        assert_eq!((pentomino[&'F']).find_corners_se(), BitGrid8(0x00010081));
+        assert_eq!((pentomino[&'F']).find_corners_se(), BitGrid8::from(0x00010081));
     }
 
     #[test]
     fn test_find_corner_ne() {
-        assert_eq!(bg8::FULL.find_corners_ne(), BitGrid8(0));
-        assert_eq!(bg8::UPPER_RIGHT.find_corners_ne(), BitGrid8(0x800000080000000));
-        assert_eq!(bg8::BACKSLASH.find_corners_ne(), BitGrid8(0x8001020408102040));
-        println!("{}", bg8::CENTER_XY.find_corners_ne());
-        assert_eq!(bg8::CENTER_XY.find_corners_ne(), BitGrid8(0x8400000000840000));
+        assert_eq!(BitGrid8::from(FULL).find_corners_ne(), BitGrid8::from(0));
+        assert_eq!(BitGrid8::from(UPPER_RIGHT).find_corners_ne(), BitGrid8::from(0x800000080000000));
+        assert_eq!(BitGrid8::from(BACKSLASH).find_corners_ne(), BitGrid8::from(0x8001020408102040));
+        println!("{}", BitGrid8::from(CENTER_XY).find_corners_ne());
+        assert_eq!(BitGrid8::from(CENTER_XY).find_corners_ne(), BitGrid8::from(0x8400000000840000));
 
         let pentomino = BitGrid8::pentomino_map();
         println!("{:}", pentomino[&'F'].find_corners_ne());
         println!("{:}", pentomino[&'F']);
-        assert_eq!((pentomino[&'F']).find_corners_ne(), BitGrid8(0x8000000000000001));
+        assert_eq!((pentomino[&'F']).find_corners_ne(), BitGrid8::from(0x8000000000000001));
     }
 
     #[test]
     fn test_border() {
-        assert_eq!(bg8::FULL.border(), BitGrid8(0));
-        assert_eq!(bg8::UPPER_RIGHT.border(), BitGrid8(0xf090909f18181ff));
-        assert_eq!(bg8::BACKSLASH.border(), BitGrid8(0xfe858b95a9d1a17f));
-        assert_eq!(bg8::CENTER_XY.border(), BitGrid8(0xe7a5e70000e7a5e7));
-        assert_eq!(BitGrid8(0x1818000000).border(), BitGrid8(0xff8199a5a59981ff));
+        assert_eq!(BitGrid8::from(FULL).border(), BitGrid8::from(0));
+        assert_eq!(BitGrid8::from(UPPER_RIGHT).border(), BitGrid8::from(0xf090909f18181ff));
+        assert_eq!(BitGrid8::from(BACKSLASH).border(), BitGrid8::from(0xfe858b95a9d1a17f));
+        assert_eq!(BitGrid8::from(CENTER_XY).border(), BitGrid8::from(0xe7a5e70000e7a5e7));
+        assert_eq!(BitGrid8::from(0x1818000000).border(), BitGrid8::from(0xff8199a5a59981ff));
 
         let pentomino = BitGrid8::pentomino_map();
         println!("{:}", pentomino[&'F'].border());
-        assert_eq!((pentomino[&'F']).border(), BitGrid8(0xff818181838584f9));
+        assert_eq!((pentomino[&'F']).border(), BitGrid8::from(0xff818181838584f9));
     }
 
     #[test]
     fn test_border_connected() {
-        assert_eq!(bg8::FULL.border8(), BitGrid8(0));
-        assert_eq!(bg8::UPPER_RIGHT.border8(), BitGrid8(0xf090909f98181ff));
-        assert_eq!(bg8::BACKSLASH.border8(), BitGrid8(0xfe8d9bb7edd9b17f));
-        assert_eq!(bg8::CENTER_XY.border8(), BitGrid8(0xe7a5e70000e7a5e7));
-        assert_eq!(BitGrid8(0x1818000000).border8(), BitGrid8(0xff81bda5a5bd81ff));
+        assert_eq!(BitGrid8::from(FULL).border8(), BitGrid8::from(0));
+        assert_eq!(BitGrid8::from(UPPER_RIGHT).border8(), BitGrid8::from(0xf090909f98181ff));
+        assert_eq!(BitGrid8::from(BACKSLASH).border8(), BitGrid8::from(0xfe8d9bb7edd9b17f));
+        assert_eq!(BitGrid8::from(CENTER_XY).border8(), BitGrid8::from(0xe7a5e70000e7a5e7));
+        assert_eq!(BitGrid8::from(0x1818000000).border8(), BitGrid8::from(0xff81bda5a5bd81ff));
 
         let pentomino = BitGrid8::pentomino_map();
         println!("{:}", pentomino[&'F'].border8());
-        assert_eq!((pentomino[&'F']).border8(), BitGrid8(0xff81818187858cf9));
+        assert_eq!((pentomino[&'F']).border8(), BitGrid8::from(0xff81818187858cf9));
     }
 
     #[test]
     fn test_count_2x2_blocks() {
-        assert_eq!(bg8::FULL.count_2x2_blocks(), 16);
-        assert_eq!(bg8::UPPER_RIGHT.count_2x2_blocks(), 4);
-        assert_eq!(bg8::BACKSLASH.count_2x2_blocks(), 0);
-        assert_eq!(bg8::CENTER_XY.count_2x2_blocks(), 0);
+        assert_eq!(BitGrid8::from(FULL).count_2x2_blocks(), 16);
+        assert_eq!(BitGrid8::from(UPPER_RIGHT).count_2x2_blocks(), 4);
+        assert_eq!(BitGrid8::from(BACKSLASH).count_2x2_blocks(), 0);
+        assert_eq!(BitGrid8::from(CENTER_XY).count_2x2_blocks(), 0);
     }
 
     #[test]
     fn test_count_upper_right_2x2_blocks_all() {
-        assert_eq!(bg8::FULL.count_upper_right_2x2_blocks(), 1);
-        assert_eq!(bg8::CENTER_XY.count_upper_right_2x2_blocks(), 2);
-        assert_eq!(bg8::HIGHFIVE.count_upper_right_2x2_blocks(), 2);
-        assert_eq!(bg8::BACKSLASH.count_upper_right_2x2_blocks(), 8);
+        assert_eq!(BitGrid8::from(FULL).count_upper_right_2x2_blocks(), 1);
+        assert_eq!(BitGrid8::from(CENTER_XY).count_upper_right_2x2_blocks(), 2);
+        assert_eq!(BitGrid8::from(HIGHFIVE).count_upper_right_2x2_blocks(), 2);
+        assert_eq!(BitGrid8::from(BACKSLASH).count_upper_right_2x2_blocks(), 8);
     }
 
     #[test]
     fn test_count_lower_left_2x2_blocks_all() {
-        assert_eq!(bg8::FULL.count_lower_left_2x2_blocks(), 0);
-        assert_eq!(bg8::CENTER_XY.count_lower_left_2x2_blocks(), 1);
-        assert_eq!(bg8::HIGHFIVE.count_lower_left_2x2_blocks(), 1);
-        assert_eq!(bg8::BACKSLASH.count_lower_left_2x2_blocks(), 0);
+        assert_eq!(BitGrid8::from(FULL).count_lower_left_2x2_blocks(), 0);
+        assert_eq!(BitGrid8::from(CENTER_XY).count_lower_left_2x2_blocks(), 1);
+        assert_eq!(BitGrid8::from(HIGHFIVE).count_lower_left_2x2_blocks(), 1);
+        assert_eq!(BitGrid8::from(BACKSLASH).count_lower_left_2x2_blocks(), 0);
     }
 
     #[test]
     fn test_count_components() {
-        assert_eq!(bg8::FULL.count_components(), 1);
-        assert_eq!(bg8::CENTER_XY.count_components(), 1);
-        assert_eq!(bg8::HIGHFIVE.count_components(), 1);
-        assert_eq!(bg8::BACKSLASH.count_components(), 8);
-        assert_eq!(bg8::SLASH.count_components(), 8);
+        assert_eq!(BitGrid8::from(FULL).count_components(), 1);
+        assert_eq!(BitGrid8::from(CENTER_XY).count_components(), 1);
+        assert_eq!(BitGrid8::from(HIGHFIVE).count_components(), 1);
+        assert_eq!(BitGrid8::from(BACKSLASH).count_components(), 8);
+        assert_eq!(BitGrid8::from(SLASH).count_components(), 8);
     }
 
     #[test]
     fn test_shift_x() {
-        assert_eq!(bg8::FULL.shift_x(1), BitGrid8(0xfefe_fefe_fefe_fefe_u64));
-        assert_eq!(bg8::FULL.shift_x(4), BitGrid8(0xf0f0_f0f0_f0f0_f0f0_u64));
-        assert_eq!(bg8::FULL.shift_x(-1), BitGrid8(0x7f7f_7f7f_7f7f_7f7f_u64));
-        assert_eq!(bg8::FULL.shift_x(-4), BitGrid8(0x0f0f_0f0f_0f0f_0f0f_u64));
-        assert_eq!(bg8::FULL.shift_x(-8), BitGrid8(0));
-        assert_eq!(bg8::FULL.shift_x(8), BitGrid8(0));
+        assert_eq!(BitGrid8::from(FULL).shift_x(1), BitGrid8::from(0xfefe_fefe_fefe_fefe_u64));
+        assert_eq!(BitGrid8::from(FULL).shift_x(4), BitGrid8::from(0xf0f0_f0f0_f0f0_f0f0_u64));
+        assert_eq!(BitGrid8::from(FULL).shift_x(-1), BitGrid8::from(0x7f7f_7f7f_7f7f_7f7f_u64));
+        assert_eq!(BitGrid8::from(FULL).shift_x(-4), BitGrid8::from(0x0f0f_0f0f_0f0f_0f0f_u64));
+        assert_eq!(BitGrid8::from(FULL).shift_x(-8), BitGrid8::from(0));
+        assert_eq!(BitGrid8::from(FULL).shift_x(8), BitGrid8::from(0));
 
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!((*(&pentomino[&'F'])).shift_x(1), BitGrid8(0x4060c));
-        assert_eq!((*(&pentomino[&'F'])).shift_x(-1), BitGrid8(0x10103));
+        assert_eq!((*(&pentomino[&'F'])).shift_x(1), BitGrid8::from(0x4060c));
+        assert_eq!((*(&pentomino[&'F'])).shift_x(-1), BitGrid8::from(0x10103));
     }
 
     #[test]
     fn test_checked_shift_x() {
-        assert_eq!(bg8::FULL.checked_shift_x(1), None);
-        assert_eq!(bg8::FULL.checked_shift_x(-1), None);
+        assert_eq!(BitGrid8::from(FULL).checked_shift_x(1), None);
+        assert_eq!(BitGrid8::from(FULL).checked_shift_x(-1), None);
 
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!((*(&pentomino[&'F'])).checked_shift_x(1), Some(BitGrid8(0x4060c)));
+        assert_eq!((*(&pentomino[&'F'])).checked_shift_x(1), Some(BitGrid8::from(0x4060c)));
         assert_eq!((*(&pentomino[&'F'])).checked_shift_x(-1), None);
     }
 
     #[test]
     fn test_shift_y() {
-        assert_eq!(bg8::FULL.shift_y(1), BitGrid8(0xffff_ffff_ffff_ff00_u64));
-        assert_eq!(bg8::FULL.shift_y(-1), BitGrid8(0x00ff_ffff_ffff_ffff_u64));
-        assert_eq!(bg8::FULL.shift_y(4), BitGrid8(0xffff_ffff_0000_0000_u64));
-        assert_eq!(bg8::FULL.shift_y(-4), BitGrid8(0x0000_0000_ffff_ffff_u64));
-        assert_eq!(bg8::FULL.shift_y(8), BitGrid8(0));
-        assert_eq!(bg8::FULL.shift_y(-8), BitGrid8(0));
-        assert_eq!(BitGrid8(0xf00f).shift_y(-1), BitGrid8(0xf0));
-        assert_eq!(BitGrid8(0xf00f00).shift_y(-1), BitGrid8(0xf00f));
+        assert_eq!(BitGrid8::from(FULL).shift_y(1), BitGrid8::from(0xffff_ffff_ffff_ff00_u64));
+        assert_eq!(BitGrid8::from(FULL).shift_y(-1), BitGrid8::from(0x00ff_ffff_ffff_ffff_u64));
+        assert_eq!(BitGrid8::from(FULL).shift_y(4), BitGrid8::from(0xffff_ffff_0000_0000_u64));
+        assert_eq!(BitGrid8::from(FULL).shift_y(-4), BitGrid8::from(0x0000_0000_ffff_ffff_u64));
+        assert_eq!(BitGrid8::from(FULL).shift_y(8), BitGrid8::from(0));
+        assert_eq!(BitGrid8::from(FULL).shift_y(-8), BitGrid8::from(0));
+        assert_eq!(BitGrid8::from(0xf00f).shift_y(-1), BitGrid8::from(0xf0));
+        assert_eq!(BitGrid8::from(0xf00f00).shift_y(-1), BitGrid8::from(0xf00f));
 
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!((*(&pentomino[&'F'])).shift_y(1), BitGrid8(0x2030600));
-        assert_eq!((*(&pentomino[&'F'])).shift_y(-1), BitGrid8(0x203));
+        assert_eq!((*(&pentomino[&'F'])).shift_y(1), BitGrid8::from(0x2030600));
+        assert_eq!((*(&pentomino[&'F'])).shift_y(-1), BitGrid8::from(0x203));
     }
 
     #[test]
     fn test_checked_shift_y() {
-        assert_eq!(bg8::FULL.checked_shift_y(1), None);
-        assert_eq!(bg8::FULL.checked_shift_y(-1), None);
-        assert_eq!(BitGrid8(0xf00f).checked_shift_y(-1), None);
-        assert_eq!(BitGrid8(0xf00f00).checked_shift_y(-1), Some(BitGrid8(0xf00f)));
+        assert_eq!(BitGrid8::from(FULL).checked_shift_y(1), None);
+        assert_eq!(BitGrid8::from(FULL).checked_shift_y(-1), None);
+        assert_eq!(BitGrid8::from(0xf00f).checked_shift_y(-1), None);
+        assert_eq!(BitGrid8::from(0xf00f00).checked_shift_y(-1), Some(BitGrid8::from(0xf00f)));
 
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!((*(&pentomino[&'F'])).checked_shift_y(1), Some(BitGrid8(0x2030600)));
+        assert_eq!((*(&pentomino[&'F'])).checked_shift_y(1), Some(BitGrid8::from(0x2030600)));
         assert_eq!((*(&pentomino[&'F'])).checked_shift_y(-1), None);
     }
 
     #[test]
     fn test_shift_xy() {
-        assert_eq!(bg8::FULL.shift_xy(1,1), BitGrid8(0xfefe_fefe_fefe_fe00_u64));
-        assert_eq!(bg8::FULL.shift_xy(1,-1), BitGrid8(0x00fe_fefe_fefe_fefe_u64));
-        assert_eq!(bg8::FULL.shift_xy(-8,1), BitGrid8(0));
-        assert_eq!(bg8::FULL.shift_xy(1,8), BitGrid8(0));
+        assert_eq!(BitGrid8::from(FULL).shift_xy(1,1), BitGrid8::from(0xfefe_fefe_fefe_fe00_u64));
+        assert_eq!(BitGrid8::from(FULL).shift_xy(1,-1), BitGrid8::from(0x00fe_fefe_fefe_fefe_u64));
+        assert_eq!(BitGrid8::from(FULL).shift_xy(-8,1), BitGrid8::from(0));
+        assert_eq!(BitGrid8::from(FULL).shift_xy(1,8), BitGrid8::from(0));
 
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!((*(&pentomino[&'F'])).shift_xy(1,1), BitGrid8(0x4060c00));
-        assert_eq!((*(&pentomino[&'F'])).shift_xy(1,-1), BitGrid8(0x406));
-        assert_eq!((*(&pentomino[&'F'])).shift_xy(-1,1), BitGrid8(0x1010300));
-        assert_eq!((*(&pentomino[&'F'])).shift_xy(-1,-1), BitGrid8(0x101));
+        assert_eq!((*(&pentomino[&'F'])).shift_xy(1,1), BitGrid8::from(0x4060c00));
+        assert_eq!((*(&pentomino[&'F'])).shift_xy(1,-1), BitGrid8::from(0x406));
+        assert_eq!((*(&pentomino[&'F'])).shift_xy(-1,1), BitGrid8::from(0x1010300));
+        assert_eq!((*(&pentomino[&'F'])).shift_xy(-1,-1), BitGrid8::from(0x101));
     }
 
     #[test]
     fn test_checked_shift_xy() {
-        assert_eq!(bg8::FULL.checked_shift_xy(1,1), None);
-        assert_eq!(bg8::FULL.checked_shift_xy(-1,-1), None);
+        assert_eq!(BitGrid8::from(FULL).checked_shift_xy(1,1), None);
+        assert_eq!(BitGrid8::from(FULL).checked_shift_xy(-1,-1), None);
 
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!((*(&pentomino[&'F'])).checked_shift_xy(1,1), Some(BitGrid8(0x4060c00)));
+        assert_eq!((*(&pentomino[&'F'])).checked_shift_xy(1,1), Some(BitGrid8::from(0x4060c00)));
         assert_eq!((*(&pentomino[&'F'])).checked_shift_xy(1,-1), None);
         assert_eq!((*(&pentomino[&'F'])).checked_shift_xy(-1,1), None);
         assert_eq!((*(&pentomino[&'F'])).checked_shift_xy(-1,-1), None);
@@ -734,14 +739,14 @@ mod test {
     fn test_bitgrid8_iterator() {
         let pentomino = BitGrid8::pentomino_map();
         let pent_i_points = pentomino[&'I'].into_iter();
-        assert_eq!(pent_i_points.collect::<Vec<_>>(), [BitGrid8(0x00000001), BitGrid8(0x00000100), BitGrid8(0x00010000), BitGrid8(0x01000000), BitGrid8(0x100000000)]);
+        assert_eq!(pent_i_points.collect::<Vec<_>>(), [BitGrid8::from(0x00000001), BitGrid8::from(0x00000100), BitGrid8::from(0x00010000), BitGrid8::from(0x01000000), BitGrid8::from(0x100000000)]);
         // Do it again to make sure iterator isn't consumed
-        assert_eq!(pent_i_points.collect::<Vec<_>>(), [BitGrid8(0x00000001), BitGrid8(0x00000100), BitGrid8(0x00010000), BitGrid8(0x01000000), BitGrid8(0x100000000)]);
+        assert_eq!(pent_i_points.collect::<Vec<_>>(), [BitGrid8::from(0x00000001), BitGrid8::from(0x00000100), BitGrid8::from(0x00010000), BitGrid8::from(0x01000000), BitGrid8::from(0x100000000)]);
 
         let pent_i_points_rotate = pentomino[&'I'].rotate_cc().into_iter();
-        assert_eq!(pent_i_points_rotate.collect::<Vec<_>>(), [BitGrid8(0x00000008), BitGrid8(0x00000010), BitGrid8(0x00000020), BitGrid8(0x00000040), BitGrid8(0x00000080)]);
+        assert_eq!(pent_i_points_rotate.collect::<Vec<_>>(), [BitGrid8::from(0x00000008), BitGrid8::from(0x00000010), BitGrid8::from(0x00000020), BitGrid8::from(0x00000040), BitGrid8::from(0x00000080)]);
         // Do it again to make sure iterator isn't consumed
-        assert_eq!(pent_i_points_rotate.collect::<Vec<_>>(), [BitGrid8(0x00000008), BitGrid8(0x00000010), BitGrid8(0x00000020), BitGrid8(0x00000040), BitGrid8(0x00000080)]);
+        assert_eq!(pent_i_points_rotate.collect::<Vec<_>>(), [BitGrid8::from(0x00000008), BitGrid8::from(0x00000010), BitGrid8::from(0x00000020), BitGrid8::from(0x00000040), BitGrid8::from(0x00000080)]);
     }
 
     
@@ -757,13 +762,13 @@ mod test {
 
     #[test]
     fn test_bounding_box() {
-        assert_eq!(bg8::FULL.bounding_box(), (8,8));
-        assert_eq!(bg8::LOWER_LEFT.bounding_box(), (4,4));
-        assert_eq!(bg8::BACKSLASH.bounding_box(), (8,8));
-        assert_eq!(bg8::HIGHFIVE.bounding_box(), (8,5));
-        assert_eq!(bg8::SMALL_FIVE.bounding_box(), (4,5));
-        assert_eq!(BitGrid8(0).bounding_box(), (0,0));
-        assert_eq!(BitGrid8(1).bounding_box(), (1,1));
+        assert_eq!(BitGrid8::from(FULL).bounding_box(), (8,8));
+        assert_eq!(BitGrid8::from(LOWER_LEFT).bounding_box(), (4,4));
+        assert_eq!(BitGrid8::from(BACKSLASH).bounding_box(), (8,8));
+        assert_eq!(BitGrid8::from(HIGHFIVE).bounding_box(), (8,5));
+        assert_eq!(BitGrid8::from(SMALL_FIVE).bounding_box(), (4,5));
+        assert_eq!(BitGrid8::from(0).bounding_box(), (0,0));
+        assert_eq!(BitGrid8::from(1).bounding_box(), (1,1));
     }
 
     #[test]
@@ -778,84 +783,84 @@ mod test {
 
     // #[test]
     // fn test_origin_bounded_shift() {
-        // assert_eq!(bg8::FULL.origin_bounded_shifts().len(), 1);
-        // assert_eq!(bg8::UPPER_LEFT.origin_bounded_shifts().len(), 25);
+        // assert_eq!(BitGrid8::from(FULL).origin_bounded_shifts().len(), 1);
+        // assert_eq!(BitGrid8::from(UPPER_LEFT).origin_bounded_shifts().len(), 25);
         // assert_eq!(ANTIDIAG.origin_bounded_shifts().len(), 1);
-        // assert_eq!(bg8::HIGHFIVE.origin_bounded_shifts().len(), 4);
-        // assert_eq!(bg8::SMALL_FIVE.origin_bounded_shifts().len(), 20);
+        // assert_eq!(BitGrid8::from(HIGHFIVE).origin_bounded_shifts().len(), 4);
+        // assert_eq!(BitGrid8::from(SMALL_FIVE).origin_bounded_shifts().len(), 20);
     // }
 
     
     // #[test]
     // fn test_origin_bounded_shift() {
-        // assert_eq!(bg8::FULL.origin_bounded_shifts().len(), 1);
-        // assert_eq!(bg8::UPPER_LEFT.origin_bounded_shifts().len(), 25);
-        // assert_eq!(bg8::BACKSLASH.origin_bounded_shifts().len(), 1);
-        // assert_eq!(bg8::HIGHFIVE.origin_bounded_shifts().len(), 4);
-        // assert_eq!(bg8::SMALL_FIVE.origin_bounded_shifts().len(), 20);
+        // assert_eq!(BitGrid8::from(FULL).origin_bounded_shifts().len(), 1);
+        // assert_eq!(BitGrid8::from(UPPER_LEFT).origin_bounded_shifts().len(), 25);
+        // assert_eq!(BitGrid8::from(BACKSLASH).origin_bounded_shifts().len(), 1);
+        // assert_eq!(BitGrid8::from(HIGHFIVE).origin_bounded_shifts().len(), 4);
+        // assert_eq!(BitGrid8::from(SMALL_FIVE).origin_bounded_shifts().len(), 20);
     // }
 
     #[test]
     fn test_rotate_cc() {
-        assert_eq!(BitGrid8(0x171515151515151d).rotate_cc(), bg8::HIGHFIVE);
-        assert_eq!(BitGrid8(0x1715151d00000000).rotate_cc(), bg8::SMALL_FIVE);
-        assert_eq!(bg8::FULL.rotate_cc(), bg8::FULL);
-        println!("{}", bg8::UPPER_LEFT);
-        println!("{}", bg8::UPPER_LEFT.rotate_cc());
-        assert_eq!(bg8::LOWER_LEFT, bg8::UPPER_LEFT.rotate_cc());
-        assert_eq!(bg8::BACKSLASH, bg8::SLASH.rotate_cc());
+        assert_eq!(BitGrid8::from(0x171515151515151d).rotate_cc(), BitGrid8::from(HIGHFIVE));
+        assert_eq!(BitGrid8::from(0x1715151d00000000).rotate_cc(), BitGrid8::from(SMALL_FIVE));
+        assert_eq!(BitGrid8::from(FULL).rotate_cc(), BitGrid8::from(FULL));
+        println!("{}", BitGrid8::from(UPPER_LEFT));
+        println!("{}", BitGrid8::from(UPPER_LEFT).rotate_cc());
+        assert_eq!(BitGrid8::from(LOWER_LEFT), BitGrid8::from(UPPER_LEFT).rotate_cc());
+        assert_eq!(BitGrid8::from(BACKSLASH), BitGrid8::from(SLASH).rotate_cc());
     }
 
     #[test]
     fn test_rotate() {
-        assert_eq!(bg8::HIGHFIVE.rotate(), BitGrid8(0x171515151515151d));
-        assert_eq!(bg8::SMALL_FIVE.rotate(), BitGrid8(0x1715151d00000000));
-        assert_eq!(bg8::BACKSLASH, bg8::SLASH.rotate());
-        assert_eq!(bg8::FULL.rotate(), bg8::FULL);
-        assert_eq!(bg8::LOWER_LEFT.rotate(), bg8::UPPER_LEFT);
+        assert_eq!(BitGrid8::from(HIGHFIVE).rotate(), BitGrid8::from(0x171515151515151d));
+        assert_eq!(BitGrid8::from(SMALL_FIVE).rotate(), BitGrid8::from(0x1715151d00000000));
+        assert_eq!(BitGrid8::from(BACKSLASH), BitGrid8::from(SLASH).rotate());
+        assert_eq!(BitGrid8::from(FULL).rotate(), BitGrid8::from(FULL));
+        assert_eq!(BitGrid8::from(LOWER_LEFT).rotate(), BitGrid8::from(UPPER_LEFT));
     }
 
     #[test]
     fn test_rotate_composition() {
-        assert_eq!(BitGrid8(0x9288_7746_3521_0076).rotate().rotate_cc(), BitGrid8(0x9288_7746_3521_0076));
-        assert_eq!(BitGrid8(0x9288_7746_3521_0076).rotate_cc().rotate(), BitGrid8(0x9288_7746_3521_0076));
+        assert_eq!(BitGrid8::from(0x9288_7746_3521_0076).rotate().rotate_cc(), BitGrid8::from(0x9288_7746_3521_0076));
+        assert_eq!(BitGrid8::from(0x9288_7746_3521_0076).rotate_cc().rotate(), BitGrid8::from(0x9288_7746_3521_0076));
     }
 
     #[test]
     fn test_flip_x() {
-        // assert_eq!(bg8::SMALL_FIVE.rotate_cc(), BitGrid8(0x1715151d00000000));
-        assert_eq!(bg8::BACKSLASH, bg8::SLASH.flip_x());
-        assert_eq!(bg8::FULL.flip_x(), bg8::FULL);
-        println!("{}", bg8::UPPER_LEFT);
-        println!("{}", bg8::UPPER_LEFT.flip_x());
-        assert_eq!(bg8::UPPER_LEFT.flip_x(), bg8::LOWER_LEFT);
-        assert_eq!(bg8::HIGHFIVE.flip_x(), BitGrid8(0xff01_ff80_ff00_0000));
+        // assert_eq!(BitGrid8::from(SMALL_FIVE).rotate_cc(), BitGrid8::from(0x1715151d00000000));
+        assert_eq!(BitGrid8::from(BACKSLASH), BitGrid8::from(SLASH).flip_x());
+        assert_eq!(BitGrid8::from(FULL).flip_x(), BitGrid8::from(FULL));
+        println!("{}", BitGrid8::from(UPPER_LEFT));
+        println!("{}", BitGrid8::from(UPPER_LEFT).flip_x());
+        assert_eq!(BitGrid8::from(UPPER_LEFT).flip_x(), BitGrid8::from(LOWER_LEFT));
+        assert_eq!(BitGrid8::from(HIGHFIVE).flip_x(), BitGrid8::from(0xff01_ff80_ff00_0000));
     }
 
     #[test]
     fn test_rotate_all_vec() {
-        assert_eq!(BitGrid8::rotate_all_vec(bg8::CENTER_XY).as_slice(), &[bg8::CENTER_XY]);
-        assert_eq!(BitGrid8::rotate_all_vec(bg8::UPPER_LEFT).as_slice(), &[bg8::LOWER_LEFT, bg8::LOWER_RIGHT, bg8::UPPER_LEFT, bg8::UPPER_RIGHT, ]);
-        assert_eq!(BitGrid8::rotate_all_vec(bg8::SLASH).len(), 2);
-        assert_eq!(BitGrid8::rotate_all_vec(bg8::CHECKER2).len(), 4);
+        assert_eq!(BitGrid8::rotate_all_vec(BitGrid8::from(CENTER_XY)).as_slice(), &[BitGrid8::from(CENTER_XY)]);
+        assert_eq!(BitGrid8::rotate_all_vec(BitGrid8::from(UPPER_LEFT)).as_slice(), &[BitGrid8::from(LOWER_LEFT), BitGrid8::from(LOWER_RIGHT), BitGrid8::from(UPPER_LEFT), BitGrid8::from(UPPER_RIGHT), ]);
+        assert_eq!(BitGrid8::rotate_all_vec(BitGrid8::from(SLASH)).len(), 2);
+        assert_eq!(BitGrid8::rotate_all_vec(BitGrid8::from(CHECKER2)).len(), 4);
     }
 
     #[test]
     fn test_origin_rotate_all() {
-        assert_eq!(BitGrid8::origin_rotate_all(bg8::CENTER_XY).as_slice(), &[bg8::CENTER_XY]);
-        assert_eq!(BitGrid8::origin_rotate_all(bg8::UPPER_LEFT).len(), 1);
-        assert_eq!(BitGrid8::origin_rotate_all(bg8::HIGHFIVE).len(), 2);
-        assert_eq!(BitGrid8::origin_rotate_all(bg8::CHECKER2).len(), 2);
-        assert_eq!(BitGrid8::origin_rotate_all(BitGrid8(0x103)).len(), 4);
+        assert_eq!(BitGrid8::origin_rotate_all(BitGrid8::from(CENTER_XY)).as_slice(), &[BitGrid8::from(CENTER_XY)]);
+        assert_eq!(BitGrid8::origin_rotate_all(BitGrid8::from(UPPER_LEFT)).len(), 1);
+        assert_eq!(BitGrid8::origin_rotate_all(BitGrid8::from(HIGHFIVE)).len(), 2);
+        assert_eq!(BitGrid8::origin_rotate_all(BitGrid8::from(CHECKER2)).len(), 2);
+        assert_eq!(BitGrid8::origin_rotate_all(BitGrid8::from(0x103)).len(), 4);
     }
 
     #[test]
     fn test_origin_dihedral_all() {
-        assert_eq!(BitGrid8::origin_dihedral_all(bg8::CENTER_XY).as_slice(), &[bg8::CENTER_XY]);
-        assert_eq!(BitGrid8::origin_dihedral_all(bg8::UPPER_LEFT).len(), 1);
-        assert_eq!(BitGrid8::origin_dihedral_all(bg8::HIGHFIVE).len(), 4);
-        assert_eq!(BitGrid8::origin_dihedral_all(bg8::CHECKER2).len(), 2);
-        assert_eq!(BitGrid8::origin_dihedral_all(BitGrid8(0x103)).len(), 4);
+        assert_eq!(BitGrid8::origin_dihedral_all(BitGrid8::from(CENTER_XY)).as_slice(), &[BitGrid8::from(CENTER_XY)]);
+        assert_eq!(BitGrid8::origin_dihedral_all(BitGrid8::from(UPPER_LEFT)).len(), 1);
+        assert_eq!(BitGrid8::origin_dihedral_all(BitGrid8::from(HIGHFIVE)).len(), 4);
+        assert_eq!(BitGrid8::origin_dihedral_all(BitGrid8::from(CHECKER2)).len(), 2);
+        assert_eq!(BitGrid8::origin_dihedral_all(BitGrid8::from(0x103)).len(), 4);
     }
 
     #[test]
@@ -893,8 +898,8 @@ mod test {
 
     // #[test]
     // fn test_shift_w() {
-        // assert_eq!(BitGrid8(0xf00f).shift_w(), None);
-        // assert_eq!(BitGrid8(0xf00f00).shift_w(), Some(BitGrid8(0xf00f)));
+        // assert_eq!(BitGrid8::from(0xf00f).shift_w(), None);
+        // assert_eq!(BitGrid8::from(0xf00f00).shift_w(), Some(BitGrid8::from(0xf00f)));
     // }
 }
 /*
