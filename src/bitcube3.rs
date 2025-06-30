@@ -1,11 +1,9 @@
 use std::fmt;
 use std::ops::*;
-// use std::convert::TryInto;
-// use std::convert::TryFrom;
 
 use flowscad::*;
 
-use crate::bitlib::{swap_mask_shift_u32};
+use crate::bitlib::*;
 use crate::bitcube4::*;
 
 // use itertools::Itertools;
@@ -22,7 +20,7 @@ pub struct BitCube3(pub u32);
 
 impl From<u32> for BitCube3 {
     fn from(x: u32) -> BitCube3 {
-        BitCube3(x)
+        BitCube3(x & BC3_FULL)
     }
 }
 
@@ -278,131 +276,129 @@ impl fmt::Display for BitCube3 {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::cu27;
-    use crate::bitcube4::BitCube4;
 
     #[test]
     fn test_debug() {
-        assert_eq!(format!("{:?}", cu27::ORDER),
+        assert_eq!(format!("{:?}", BitCube3::from(BC3_ORDER)),
           "BitCube3(0o076543210)\n010 101 000\n100 001 111\n000 110 011"
         );
     }
 
     #[test]
     fn test_display() {
-        assert_eq!(format!("{:}", cu27::ORDER),
+        assert_eq!(format!("{:}", BitCube3::from(BC3_ORDER)),
             "010 101 000\n100 001 111\n000 110 011"
         );
     }
 
     #[test]
     fn test_bitor() {
-        assert_eq!(cu27::FULL | cu27::FULL, cu27::FULL);
-        assert_eq!(cu27::CENTER_X | cu27::CENTER_Y | cu27::CENTER_Z, cu27::CENTER_ALL);
+        assert_eq!(BitCube3::from(BC3_FULL) | BitCube3::from(BC3_FULL), BitCube3::from(BC3_FULL));
+        assert_eq!(BitCube3::from(BC3_CENTER_X) | BitCube3::from(BC3_CENTER_Y) | BitCube3::from(BC3_CENTER_Z), BitCube3::from(BC3_CENTER_ALL));
     }
 
     #[test]
     fn test_bitand() {
-        assert_eq!(cu27::FULL & cu27::FULL, cu27::FULL);
-        assert_eq!(cu27::CENTER_X & cu27::CENTER_Y & cu27::CENTER_Z, BitCube3(0o020_000_u32));
+        assert_eq!(BitCube3::from(BC3_FULL) & BitCube3::from(BC3_FULL), BitCube3::from(BC3_FULL));
+        assert_eq!(BitCube3::from(BC3_CENTER_X) & BitCube3::from(BC3_CENTER_Y) & BitCube3::from(BC3_CENTER_Z), BitCube3(0o020_000_u32));
     }
 
     #[test]
     fn test_shift_x() {
-        assert_eq!(cu27::FULL.shift_x(1), BitCube3(0o666_666_666_u32));
-        assert_eq!(cu27::FULL.shift_x(2), BitCube3(0o444_444_444_u32));
+        assert_eq!(BitCube3::from(BC3_FULL).shift_x(1), BitCube3(0o666_666_666_u32));
+        assert_eq!(BitCube3::from(BC3_FULL).shift_x(2), BitCube3(0o444_444_444_u32));
     }
 
     #[test]
     fn test_bounded_shift_x() {
-        assert_eq!(cu27::FULL.bounded_shift_x(1), None);
-        assert_eq!(cu27::CENTER_X.bounded_shift_x(1), None);
-        assert_eq!(cu27::CENTER_Y.bounded_shift_x(1), Some(BitCube3(0o444000)));
-        assert_eq!(cu27::CENTER_Z.bounded_shift_x(1), Some(BitCube3(0o040040040)));
-        assert_eq!(cu27::CENTER_Y << 1, BitCube3(0o444000));
-        assert_eq!(cu27::CENTER_Z << 1, BitCube3(0o040040040));
+        assert_eq!(BitCube3::from(BC3_FULL).bounded_shift_x(1), None);
+        assert_eq!(BitCube3::from(BC3_CENTER_X).bounded_shift_x(1), None);
+        assert_eq!(BitCube3::from(BC3_CENTER_Y).bounded_shift_x(1), Some(BitCube3(0o444000)));
+        assert_eq!(BitCube3::from(BC3_CENTER_Z).bounded_shift_x(1), Some(BitCube3(0o040040040)));
+        assert_eq!(BitCube3::from(BC3_CENTER_Y) << 1, BitCube3(0o444000));
+        assert_eq!(BitCube3::from(BC3_CENTER_Z) << 1, BitCube3(0o040040040));
     }
 
     #[test]
     fn test_shift_y() {
-        assert_eq!(cu27::FULL.shift_y(1), BitCube3(0o770_770_770_u32));
-        assert_eq!(cu27::FULL.shift_y(-2), BitCube3(0o007_007_007_u32));
-        assert_eq!(cu27::CENTER_Z >> 3, BitCube3(0o002002002));
+        assert_eq!(BitCube3::from(BC3_FULL).shift_y(1), BitCube3(0o770_770_770_u32));
+        assert_eq!(BitCube3::from(BC3_FULL).shift_y(-2), BitCube3(0o007_007_007_u32));
+        assert_eq!(BitCube3::from(BC3_CENTER_Z) >> 3, BitCube3(0o002002002));
     }
 
     #[test]
     fn test_bounded_shift_y() {
-        assert_eq!(cu27::FULL.bounded_shift_y(1), None);
-        assert_eq!(cu27::CENTER_X.bounded_shift_y(1), Some(BitCube3(0o700000)));
-        assert_eq!(cu27::CENTER_Y.bounded_shift_y(1), None);
-        assert_eq!(cu27::CENTER_Z.bounded_shift_y(1), Some(BitCube3(0o200200200)));
+        assert_eq!(BitCube3::from(BC3_FULL).bounded_shift_y(1), None);
+        assert_eq!(BitCube3::from(BC3_CENTER_X).bounded_shift_y(1), Some(BitCube3(0o700000)));
+        assert_eq!(BitCube3::from(BC3_CENTER_Y).bounded_shift_y(1), None);
+        assert_eq!(BitCube3::from(BC3_CENTER_Z).bounded_shift_y(1), Some(BitCube3(0o200200200)));
     }
 
     #[test]
     fn test_shift_z() {
-        assert_eq!(cu27::FULL.shift_z(1), BitCube3(0o777_777_000_u32));
-        assert_eq!(cu27::FULL.shift_z(-2), BitCube3(0o000_000_777_u32));
+        assert_eq!(BitCube3::from(BC3_FULL).shift_z(1), BitCube3(0o777_777_000_u32));
+        assert_eq!(BitCube3::from(BC3_FULL).shift_z(-2), BitCube3(0o000_000_777_u32));
     }
 
     #[test]
     fn test_bounded_shift_z() {
-        assert_eq!(cu27::FULL.bounded_shift_z(1), None);
-        assert_eq!(cu27::CENTER_X.bounded_shift_z(1), Some(BitCube3(0o070000000)));
-        assert_eq!(cu27::CENTER_Y.bounded_shift_z(1), Some(BitCube3(0o222000000)));
-        assert_eq!(cu27::CENTER_Z.bounded_shift_z(1), None);
+        assert_eq!(BitCube3::from(BC3_FULL).bounded_shift_z(1), None);
+        assert_eq!(BitCube3::from(BC3_CENTER_X).bounded_shift_z(1), Some(BitCube3(0o070000000)));
+        assert_eq!(BitCube3::from(BC3_CENTER_Y).bounded_shift_z(1), Some(BitCube3(0o222000000)));
+        assert_eq!(BitCube3::from(BC3_CENTER_Z).bounded_shift_z(1), None);
     }
 
     // #[test]
     // fn test_shift_to_origin() {
-        // assert_eq!(cu27::FULL.shift_to_origin(), cu27::FULL);
-        // assert_eq!((cu27::CENTER_X | cu27::CENTER_Y).shift_to_origin(), BitCube4(0x0000_0000_6ff6_6ff6));
+        // assert_eq!(BitCube3::from(BC3_FULL).shift_to_origin(), BitCube3::from(BC3_FULL));
+        // assert_eq!((BitCube3::from(BC3_CENTER_X) | BitCube3::from(BC3_CENTER_Y)).shift_to_origin(), BitCube4(0x0000_0000_6ff6_6ff6));
     // }
 
     #[test]
     fn test_rotate_x() {
-        assert_eq!(cu27::FULL.rotate_x(), cu27::FULL);
-        assert_eq!(cu27::CENTER.rotate_x(), cu27::CENTER);
-        assert_eq!(cu27::CENTER_X.rotate_x(), cu27::CENTER_X);
-        assert_eq!(cu27::CENTER_Y.rotate_x(), cu27::CENTER_Z);
-        assert_eq!(cu27::CENTER_Z.rotate_x(), cu27::CENTER_Y);
+        assert_eq!(BitCube3::from(BC3_FULL).rotate_x(), BitCube3::from(BC3_FULL));
+        assert_eq!(BitCube3::from(BC3_CENTER).rotate_x(), BitCube3::from(BC3_CENTER));
+        assert_eq!(BitCube3::from(BC3_CENTER_X).rotate_x(), BitCube3::from(BC3_CENTER_X));
+        assert_eq!(BitCube3::from(BC3_CENTER_Y).rotate_x(), BitCube3::from(BC3_CENTER_Z));
+        assert_eq!(BitCube3::from(BC3_CENTER_Z).rotate_x(), BitCube3::from(BC3_CENTER_Y));
         assert_eq!(BitCube3(0o7).rotate_x(), BitCube3(0o700));
         assert_eq!(BitCube3(0o4017).rotate_x(), BitCube3(0o100740));
     }
 
     #[test]
     fn test_rotate_y() {
-        assert_eq!(cu27::FULL.rotate_y(), cu27::FULL);
-        assert_eq!(cu27::CENTER.rotate_y(), cu27::CENTER);
-        assert_eq!(cu27::CENTER_X.rotate_y(), cu27::CENTER_Z);
-        assert_eq!(cu27::CENTER_Y.rotate_y(), cu27::CENTER_Y);
-        assert_eq!(cu27::CENTER_Z.rotate_y(), cu27::CENTER_X);
+        assert_eq!(BitCube3::from(BC3_FULL).rotate_y(), BitCube3::from(BC3_FULL));
+        assert_eq!(BitCube3::from(BC3_CENTER).rotate_y(), BitCube3::from(BC3_CENTER));
+        assert_eq!(BitCube3::from(BC3_CENTER_X).rotate_y(), BitCube3::from(BC3_CENTER_Z));
+        assert_eq!(BitCube3::from(BC3_CENTER_Y).rotate_y(), BitCube3::from(BC3_CENTER_Y));
+        assert_eq!(BitCube3::from(BC3_CENTER_Z).rotate_y(), BitCube3::from(BC3_CENTER_X));
         assert_eq!(BitCube3(0o7).rotate_y(), BitCube3(0o4004004));
         assert_eq!(BitCube3(0o4017).rotate_y(), BitCube3(0o6004044));
     }
 
     #[test]
     fn test_rotate_z() {
-        assert_eq!(cu27::FULL.rotate_z(), cu27::FULL);
-        assert_eq!(cu27::CENTER.rotate_z(), cu27::CENTER);
-        assert_eq!(cu27::CENTER_X.rotate_z(), cu27::CENTER_Y);
-        assert_eq!(cu27::CENTER_Y.rotate_z(), cu27::CENTER_X);
-        assert_eq!(cu27::CENTER_Z.rotate_z(), cu27::CENTER_Z);
+        assert_eq!(BitCube3::from(BC3_FULL).rotate_z(), BitCube3::from(BC3_FULL));
+        assert_eq!(BitCube3::from(BC3_CENTER).rotate_z(), BitCube3::from(BC3_CENTER));
+        assert_eq!(BitCube3::from(BC3_CENTER_X).rotate_z(), BitCube3::from(BC3_CENTER_Y));
+        assert_eq!(BitCube3::from(BC3_CENTER_Y).rotate_z(), BitCube3::from(BC3_CENTER_X));
+        assert_eq!(BitCube3::from(BC3_CENTER_Z).rotate_z(), BitCube3::from(BC3_CENTER_Z));
         assert_eq!(BitCube3(0o7).rotate_z(), BitCube3(0o444));
         assert_eq!(BitCube3(0o4017).rotate_z(), BitCube3(0o400446));
     }
 
     #[test]
     fn test_rotate_d() {
-        assert_eq!(cu27::FULL.rotate_d(), cu27::FULL);
-        assert_eq!(cu27::CENTER_X.rotate_d(), cu27::CENTER_Y);
-        assert_eq!(cu27::CENTER_Y.rotate_d(), cu27::CENTER_Z);
-        assert_eq!(cu27::CENTER_Z.rotate_d(), cu27::CENTER_X);
+        assert_eq!(BitCube3::from(BC3_FULL).rotate_d(), BitCube3::from(BC3_FULL));
+        assert_eq!(BitCube3::from(BC3_CENTER_X).rotate_d(), BitCube3::from(BC3_CENTER_Y));
+        assert_eq!(BitCube3::from(BC3_CENTER_Y).rotate_d(), BitCube3::from(BC3_CENTER_Z));
+        assert_eq!(BitCube3::from(BC3_CENTER_Z).rotate_d(), BitCube3::from(BC3_CENTER_X));
         assert_eq!(BitCube3(0o1047).rotate_d(), BitCube3(0o100113));
     }
 
     #[test]
     fn test_overlap() {
-        assert!(cu27::CENTER_X.overlap(cu27::CENTER_Y));
+        assert!(BitCube3::from(BC3_CENTER_X).overlap(BitCube3::from(BC3_CENTER_Y)));
     }
 
     #[test]

@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use derive_more::*;
 use arrayvec::*;
 
-use crate::bitlib::swap_mask_shift_u64;
+use crate::bitlib::*;
 
 // -----------------------------------------------------------------
 // 2D geometric operations on an 8x8 grid
@@ -38,6 +38,12 @@ impl core::ops::BitOr<u64> for BitMatrix8 {
 
     fn bitor(self, rhs: u64) -> Self {
         Self(self.0 | rhs)
+    }
+}
+
+impl From<u64> for BitMatrix8 {
+    fn from(raw_matrix: u64) -> Self {
+        BitMatrix8(raw_matrix)
     }
 }
 
@@ -395,7 +401,7 @@ mod test {
 
     #[test]
     fn test_rank() {
-        assert_eq!(ma64::IDENTITY.rank(), 8);
+        assert_eq!(BitMatrix8::from(IDENTITY).rank(), 8);
         assert_eq!(BitMatrix8(0xfedcba9876543210u64).rank(), 4);
     }
 
@@ -409,20 +415,20 @@ mod test {
 
     #[test]
     fn test_rotate() {
-        assert_eq!(BitMatrix8(0x171515151515151d).rotate(), ma64::HIGHFIVE);
-        assert_eq!(BitMatrix8(0x1715151d00000000).rotate(), ma64::SMALL_FIVE);
-        assert_eq!(ma64::FULL.rotate(), ma64::FULL);
-        assert_eq!(ma64::UPPER_LEFT, ma64::LOWER_LEFT.rotate());
-        assert_eq!(ma64::ANTIDIAG, ma64::IDENTITY.rotate());
+        assert_eq!(BitMatrix8(0x171515151515151d).rotate(), BitMatrix8::from(HIGHFIVE));
+        assert_eq!(BitMatrix8(0x1715151d00000000).rotate(), BitMatrix8::from(SMALL_FIVE));
+        assert_eq!(BitMatrix8::from(FULL).rotate(), BitMatrix8::from(FULL));
+        assert_eq!(BitMatrix8::from(BM8_UPPER_LEFT), BitMatrix8::from(BM8_LOWER_LEFT).rotate());
+        assert_eq!(BitMatrix8::from(ANTIDIAG), BitMatrix8::from(IDENTITY).rotate());
     }
 
     #[test]
     fn test_rotate_cc() {
-        assert_eq!(ma64::HIGHFIVE.rotate_cc(), BitMatrix8(0x171515151515151d));
-        assert_eq!(ma64::SMALL_FIVE.rotate_cc(), BitMatrix8(0x1715151d00000000));
-        assert_eq!(ma64::ANTIDIAG, ma64::IDENTITY.rotate_cc());
-        assert_eq!(ma64::FULL.rotate_cc(), ma64::FULL);
-        assert_eq!(ma64::UPPER_LEFT.rotate_cc(), ma64::LOWER_LEFT);
+        assert_eq!(BitMatrix8::from(HIGHFIVE).rotate_cc(), BitMatrix8(0x171515151515151d));
+        assert_eq!(BitMatrix8::from(SMALL_FIVE).rotate_cc(), BitMatrix8(0x1715151d00000000));
+        assert_eq!(BitMatrix8::from(ANTIDIAG), BitMatrix8::from(IDENTITY).rotate_cc());
+        assert_eq!(BitMatrix8::from(FULL).rotate_cc(), BitMatrix8::from(FULL));
+        assert_eq!(BitMatrix8::from(BM8_UPPER_LEFT).rotate_cc(), BitMatrix8::from(BM8_LOWER_LEFT));
     }
 
     #[test]
@@ -433,36 +439,36 @@ mod test {
 
     #[test]
     fn test_flipx() {
-        // assert_eq!(ma64::SMALL_FIVE.rotate_cc(), BitMatrix8(0x1715151d00000000));
-        assert_eq!(ma64::ANTIDIAG, ma64::IDENTITY.flip_x());
-        assert_eq!(ma64::FULL.flip_x(), ma64::FULL);
-        assert_eq!(ma64::UPPER_LEFT.flip_x(), ma64::LOWER_LEFT);
-        assert_eq!(ma64::HIGHFIVE.flip_x(), BitMatrix8(0xff01_ff80_ff00_0000));
+        // assert_eq!(BitMatrix8::from(SMALL_FIVE).rotate_cc(), BitMatrix8(0x1715151d00000000));
+        assert_eq!(BitMatrix8::from(ANTIDIAG), BitMatrix8::from(IDENTITY).flip_x());
+        assert_eq!(BitMatrix8::from(FULL).flip_x(), BitMatrix8::from(FULL));
+        assert_eq!(BitMatrix8::from(BM8_UPPER_LEFT).flip_x(), BitMatrix8::from(BM8_LOWER_LEFT));
+        assert_eq!(BitMatrix8::from(HIGHFIVE).flip_x(), BitMatrix8(0xff01_ff80_ff00_0000));
     }
 
     #[test]
     fn test_rotate_all_vec() {
-        assert_eq!(BitMatrix8::rotate_all_vec(ma64::CENTER_XY).as_slice(), &[ma64::CENTER_XY]);
-        assert_eq!(BitMatrix8::rotate_all_vec(ma64::UPPER_LEFT).as_slice(), &[ma64::UPPER_LEFT, ma64::UPPER_RIGHT, ma64::LOWER_LEFT, ma64::LOWER_RIGHT]);
-        assert_eq!(BitMatrix8::rotate_all_vec(ma64::IDENTITY).len(), 2);
-        assert_eq!(BitMatrix8::rotate_all_vec(ma64::CHECKER2).len(), 4);
+        assert_eq!(BitMatrix8::rotate_all_vec(BitMatrix8::from(CENTER_XY)).as_slice(), &[BitMatrix8::from(CENTER_XY)]);
+        assert_eq!(BitMatrix8::rotate_all_vec(BitMatrix8::from(BM8_UPPER_LEFT)).as_slice(), &[BitMatrix8::from(BM8_UPPER_LEFT), BitMatrix8::from(BM8_UPPER_RIGHT), BitMatrix8::from(BM8_LOWER_LEFT), BitMatrix8::from(BM8_LOWER_RIGHT)]);
+        assert_eq!(BitMatrix8::rotate_all_vec(BitMatrix8::from(IDENTITY)).len(), 2);
+        assert_eq!(BitMatrix8::rotate_all_vec(BitMatrix8::from(CHECKER2)).len(), 4);
     }
 
     #[test]
     fn test_origin_rotate_all() {
-        assert_eq!(BitMatrix8::origin_rotate_all(ma64::CENTER_XY).as_slice(), &[ma64::CENTER_XY]);
-        assert_eq!(BitMatrix8::origin_rotate_all(ma64::UPPER_LEFT).len(), 1);
-        assert_eq!(BitMatrix8::origin_rotate_all(ma64::HIGHFIVE).len(), 2);
-        assert_eq!(BitMatrix8::origin_rotate_all(ma64::CHECKER2).len(), 2);
+        assert_eq!(BitMatrix8::origin_rotate_all(BitMatrix8::from(CENTER_XY)).as_slice(), &[BitMatrix8::from(CENTER_XY)]);
+        assert_eq!(BitMatrix8::origin_rotate_all(BitMatrix8::from(BM8_UPPER_LEFT)).len(), 1);
+        assert_eq!(BitMatrix8::origin_rotate_all(BitMatrix8::from(HIGHFIVE)).len(), 2);
+        assert_eq!(BitMatrix8::origin_rotate_all(BitMatrix8::from(CHECKER2)).len(), 2);
         assert_eq!(BitMatrix8::origin_rotate_all(BitMatrix8(0x103)).len(), 4);
     }
 
     #[test]
     fn test_origin_dihedral_all() {
-        assert_eq!(BitMatrix8::origin_dihedral_all(ma64::CENTER_XY).as_slice(), &[ma64::CENTER_XY]);
-        assert_eq!(BitMatrix8::origin_dihedral_all(ma64::UPPER_LEFT).len(), 1);
-        assert_eq!(BitMatrix8::origin_dihedral_all(ma64::HIGHFIVE).len(), 4);
-        assert_eq!(BitMatrix8::origin_dihedral_all(ma64::CHECKER2).len(), 2);
+        assert_eq!(BitMatrix8::origin_dihedral_all(BitMatrix8::from(CENTER_XY)).as_slice(), &[BitMatrix8::from(CENTER_XY)]);
+        assert_eq!(BitMatrix8::origin_dihedral_all(BitMatrix8::from(BM8_UPPER_LEFT)).len(), 1);
+        assert_eq!(BitMatrix8::origin_dihedral_all(BitMatrix8::from(HIGHFIVE)).len(), 4);
+        assert_eq!(BitMatrix8::origin_dihedral_all(BitMatrix8::from(CHECKER2)).len(), 2);
         assert_eq!(BitMatrix8::origin_dihedral_all(BitMatrix8(0x103)).len(), 4);
     }
 

@@ -70,7 +70,7 @@ impl D4CanonicalGrid8 {
     }
 }
 
-impl std::convert::From<BitGrid8> for D4CanonicalGrid8 {
+impl From<BitGrid8> for D4CanonicalGrid8 {
     fn from(grid: BitGrid8) -> Self {
         Self::new(OriginBitGrid8::from(grid))
     }
@@ -215,9 +215,15 @@ impl fmt::Display for OriginBitGrid8 {
     } 
 } 
 
-impl std::convert::From<BitGrid8> for OriginBitGrid8 {
+impl From<BitGrid8> for OriginBitGrid8 {
     fn from(grid: BitGrid8) -> OriginBitGrid8 {
         Self::new(grid.0)
+    }
+}
+
+impl From<u64> for OriginBitGrid8 {
+    fn from(raw_grid: u64) -> OriginBitGrid8 {
+        Self::new(raw_grid)
     }
 }
 
@@ -252,7 +258,7 @@ impl core::ops::Deref for OriginBitGrid8 {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::bg8;
+    use crate::bitlib::*;
     
     #[test]
     fn test_size_of_piece_grid8() {
@@ -297,7 +303,7 @@ mod test {
         let pent_f = OriginBitGrid8::from(pentomino[&'F']);
         println!("{:}", pent_f);
         assert_eq!(pent_f.targeted_fit(board, 21).unwrap().len(), 5);
-        let board = bg8::FULL ^ (pent_f.grid << 20);
+        let board = (pent_f.grid << 20) ^ FULL;
         // println!("{:}", board);
         // println!("{:}", BitGrid8(1<<21));
         assert_eq!(pent_f.targeted_fit(board, 21), Some(vec![BitGrid8(0x2030600000)]));
@@ -377,21 +383,21 @@ mod test {
             OriginBitGrid8::new(0x705));
         assert_eq!(OriginBitGrid8::from(pentomino[&'X']).flip_x(),
             OriginBitGrid8::from(pentomino[&'X']));
-        assert_eq!(OriginBitGrid8::from(bg8::IDENTITY).flip_x(), OriginBitGrid8::from(bg8::ANTIDIAG));
-        assert_eq!(OriginBitGrid8::from(bg8::FULL).flip_x(), OriginBitGrid8::from(bg8::FULL));
-        assert_eq!(OriginBitGrid8::from(bg8::UPPER_LEFT).flip_x(), OriginBitGrid8::from(bg8::UPPER_LEFT));
+        assert_eq!(OriginBitGrid8::from(IDENTITY).flip_x(), OriginBitGrid8::from(ANTIDIAG));
+        assert_eq!(OriginBitGrid8::from(FULL).flip_x(), OriginBitGrid8::from(FULL));
+        assert_eq!(OriginBitGrid8::from(UPPER_LEFT).flip_x(), OriginBitGrid8::from(UPPER_LEFT));
         // println!("{:}", OriginBitGrid8::from(HIGHFIVE));
         // println!("{:}", OriginBitGrid8::new(0xff01_ff80_ff00_0000));
-        assert_eq!(OriginBitGrid8::from(bg8::HIGHFIVE).flip_x(), OriginBitGrid8::new(0xff01_ff80_ff));
-        assert_eq!(OriginBitGrid8::from(bg8::SMALL_FIVE).flip_x(), OriginBitGrid8::new(0xf010f080f));
+        assert_eq!(OriginBitGrid8::from(HIGHFIVE).flip_x(), OriginBitGrid8::new(0xff01_ff80_ff));
+        assert_eq!(OriginBitGrid8::from(SMALL_FIVE).flip_x(), OriginBitGrid8::new(0xf010f080f));
     }
 
     #[test]
     fn test_symmetry_c4() {
-        assert_eq!(OriginBitGrid8::from(bg8::CENTER_XY).symmetry_c4().as_slice(), &[OriginBitGrid8::from(bg8::CENTER_XY)]);
-        assert_eq!(OriginBitGrid8::from(bg8::IDENTITY).symmetry_c4().len(), 2);
-        assert_eq!(OriginBitGrid8::from(bg8::HIGHFIVE).symmetry_c4().len(), 2);
-        assert_eq!(OriginBitGrid8::from(bg8::CHECKER2).symmetry_c4().len(), 2);
+        assert_eq!(OriginBitGrid8::from(CENTER_XY).symmetry_c4().as_slice(), &[OriginBitGrid8::from(CENTER_XY)]);
+        assert_eq!(OriginBitGrid8::from(IDENTITY).symmetry_c4().len(), 2);
+        assert_eq!(OriginBitGrid8::from(HIGHFIVE).symmetry_c4().len(), 2);
+        assert_eq!(OriginBitGrid8::from(CHECKER2).symmetry_c4().len(), 2);
     }
 
     #[test]
@@ -415,10 +421,10 @@ mod test {
 
     #[test]
     fn test_symmetry_d4() {
-        assert_eq!(OriginBitGrid8::from(bg8::CENTER_XY).symmetry_d4().as_slice(), &[OriginBitGrid8::from(bg8::CENTER_XY)]);
-        assert_eq!(OriginBitGrid8::from(bg8::IDENTITY).symmetry_d4().len(), 2);
-        assert_eq!(OriginBitGrid8::from(bg8::HIGHFIVE).symmetry_d4().len(), 4);
-        assert_eq!(OriginBitGrid8::from(bg8::CHECKER2).symmetry_d4().len(), 2);
+        assert_eq!(OriginBitGrid8::from(CENTER_XY).symmetry_d4().as_slice(), &[OriginBitGrid8::from(CENTER_XY)]);
+        assert_eq!(OriginBitGrid8::from(IDENTITY).symmetry_d4().len(), 2);
+        assert_eq!(OriginBitGrid8::from(HIGHFIVE).symmetry_d4().len(), 4);
+        assert_eq!(OriginBitGrid8::from(CHECKER2).symmetry_d4().len(), 2);
     }
 
     #[test]

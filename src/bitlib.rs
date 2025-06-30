@@ -41,6 +41,8 @@ impl SwapMaskShiftU32 {
 pub const ALL: u64 = 0xffff_ffff_ffff_ffff;
 pub const FULL: u64 = 0xffff_ffff_ffff_ffff_u64;
 pub const ORDER: u64 = 0xfedc_ba98_7654_3210_u64;
+pub const REP_01: u64 = 0x0101010101010101u64;
+pub const REP_7F: u64 = 0x7f7f7f7f7f7f7f7fu64;
 
 /// BitCube4 constants
 pub const UPPER_RIGHT_2X4X2: u64 = 0xcccc_cccc_0000_0000_u64;
@@ -75,6 +77,11 @@ pub const BORDER:u64 = 0xff81_8181_8181_81ff;
 pub const IDENTITY:u64 = 0x8040201008040201;
 pub const ANTIDIAG:u64 = 0x0102040810204080;
 
+pub const BM8_UPPER_LEFT: u64 = 0x0f0f_0f0f_u64;
+pub const BM8_UPPER_RIGHT: u64 = 0xf0f0_f0f0_u64;
+pub const BM8_LOWER_LEFT: u64 = 0x0f0f_0f0f_0000_0000_u64;
+pub const BM8_LOWER_RIGHT: u64 = 0xf0f0_f0f0_0000_0000_u64;
+
 /// BitCube3 constants
 pub const BC3_FULL: u32 = 0o777777777_u32;
 pub const BC3_ORDER: u32 = 0o76543210_u32;
@@ -84,65 +91,6 @@ pub const BC3_CENTER_Y: u32 = 0o000_222_000_u32;
 pub const BC3_CENTER_Z: u32 = 0o020_020_020_u32;
 pub const BC3_CENTER_ALL: u32 = BC3_CENTER_X | BC3_CENTER_Y | BC3_CENTER_Z;
 
-/// Useful constants for 4-cube transformations
-pub mod cu64 {
-    use crate::bitcube4::BitCube4;
-
-    pub const ALL: u64 = 0xffff_ffff_ffff_ffff;
-    pub const FULL: BitCube4 = BitCube4(0xffff_ffff_ffff_ffff_u64);
-    pub const ORDER: BitCube4 = BitCube4(0xfedc_ba98_7654_3210_u64);
-    pub const UPPER_RIGHT_2X4X2: BitCube4 = BitCube4(0xcccc_cccc_0000_0000_u64);
-    pub const LOWER_RIGHT_2X4X2: BitCube4 = BitCube4(0x0000_0000_cccc_cccc_u64);
-    pub const LOWER_LEFT_2X4X2: BitCube4 = BitCube4(0x0000_0000_3333_3333_u64);
-    pub const CENTER_X: BitCube4 = BitCube4(0x0000_0ff0_0ff0_0000_u64);
-    pub const CENTER_Y: BitCube4 = BitCube4(0x0000_6666_6666_0000_u64);
-    pub const CENTER_Z: BitCube4 = BitCube4(0x0660_0660_0660_0660_u64);
-    pub const CENTER_ALL: BitCube4 = BitCube4(CENTER_X.0 | CENTER_Y.0 | CENTER_Z.0);
-    pub const SUBCUBE_0: BitCube4 = BitCube4(0x0033_0033_u64);
-    pub const SUBCUBE_1: BitCube4 = BitCube4(0x00cc_00cc_u64);
-    pub const SUBCUBE_2: BitCube4 = BitCube4(0x3300_3300_u64);
-    pub const SUBCUBE_3: BitCube4 = BitCube4(0xcc00_cc00_u64);
-    pub const SUBCUBE_4: BitCube4 = BitCube4(0x0033_0033_0000_0000_u64);
-    pub const SUBCUBE_5: BitCube4 = BitCube4(0x00cc_00cc_0000_0000_u64);
-    pub const SUBCUBE_6: BitCube4 = BitCube4(0x3300_3300_0000_0000_u64);
-    pub const SUBCUBE_7: BitCube4 = BitCube4(0xcc00_cc00_0000_0000_u64);
-}
-
-/// Useful constants for 3-cube transformations
-pub mod cu27 {
-    use crate::bitcube3::BitCube3;
-
-    pub const FULL: BitCube3 = BitCube3(0o777777777_u32);
-    pub const ORDER: BitCube3 = BitCube3(0o76543210_u32);
-    pub const CENTER: BitCube3 = BitCube3(0o000_020_000_u32);
-    pub const CENTER_X: BitCube3 = BitCube3(0o000_070_000_u32);
-    pub const CENTER_Y: BitCube3 = BitCube3(0o000_222_000_u32);
-    pub const CENTER_Z: BitCube3 = BitCube3(0o020_020_020_u32);
-    pub const CENTER_ALL: BitCube3 = BitCube3(CENTER_X.0 | CENTER_Y.0 | CENTER_Z.0);
-}
-
-/// Useful constants for 3-cube transformations
-pub mod bg8 {
-    use crate::bitgrid8::BitGrid8;
-
-    pub const ALL: u64 = 0xffff_ffff_ffff_ffff;
-    pub const CENTER_XY: BitGrid8 = BitGrid8(0x1818_18ff_ff18_1818);
-    pub const FULL: BitGrid8 = BitGrid8(0xffff_ffff_ffff_ffff_u64);
-    pub const ORDER: BitGrid8 = BitGrid8(0xfedc_ba98_7654_3210_u64);
-    pub const LOWER_LEFT: BitGrid8 = BitGrid8(0x0f0f_0f0f_u64);
-    pub const LOWER_RIGHT: BitGrid8 = BitGrid8(0xf0f0_f0f0_u64);
-    pub const UPPER_LEFT: BitGrid8 = BitGrid8(0x0f0f_0f0f_0000_0000_u64);
-    pub const UPPER_RIGHT: BitGrid8 = BitGrid8(0xf0f0_f0f0_0000_0000_u64);
-
-    pub const HIGHFIVE: BitGrid8 = BitGrid8(0xff80ff01ff);
-    pub const SMALL_FIVE: BitGrid8 = BitGrid8(0x00f080f010f);
-    pub const CHECKER2: BitGrid8 = BitGrid8(0x0c0c_0303);
-    pub const SLASH:BitGrid8 = BitGrid8(0x8040201008040201);
-    pub const BACKSLASH:BitGrid8 = BitGrid8(0x0102040810204080);
-    pub const BORDER:BitGrid8 = BitGrid8(0xff81_8181_8181_81ff);
-    pub const IDENTITY:BitGrid8 = BitGrid8(0x8040201008040201);
-    pub const ANTIDIAG:BitGrid8 = BitGrid8(0x0102040810204080);
-}
 
 #[cfg(test)]
 mod test {
