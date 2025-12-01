@@ -17,5 +17,9 @@ thiserror = "2.0.12"
 criterion = { version = "0.5.1", features = ["html_reports"] }
 
 [[bench]]
-name = "bit_benchmark"
+name = "bitlib"
+harness = false
+
+[[bench]]
+name = "bitgrid8"
 harness = false

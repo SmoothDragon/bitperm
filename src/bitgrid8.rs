@@ -147,6 +147,12 @@ impl Iterator for BitGrid8 {
     }
 }
 
+/// TODO: Can add concavity test search by detecting any rotation of
+/// XX
+/// .X
+///
+/// TODO: Is there convex hull operation?
+/// Possibly expand with corners, invert, expand without corners, repeat
 
 impl BitGrid8 {
     /// Pentominoes indexed by wikipedia naming convention.
@@ -325,6 +331,20 @@ impl BitGrid8 {
     /// TODO: This should just rotate and not shift to oorigin like piece_bitgtid8
     pub fn origin_dihedral_all(self) -> ArrayVec::<BitGrid8, 8> {
         let mut vec = ArrayVec::<BitGrid8, 8>::new();
+        let mut x = self.shift_to_origin();
+        vec.push(x);
+        for _ in 0..3 { x = x.rotate_cc().shift_to_origin(); vec.push(x); }
+        x = x.flip_x().shift_to_origin(); 
+        vec.push(x);
+        for _ in 0..3 { x = x.rotate_cc().shift_to_origin(); vec.push(x); }
+        vec.sort_unstable();
+        let symmetries = vec.partition_dedup().0.len();  // Move duplicates to the end.
+        vec.truncate(symmetries);
+        vec
+    }
+
+    pub fn origin_dihedral_all_vec(self) -> Vec<BitGrid8> {
+        let mut vec = Vec::<BitGrid8>::new();
         let mut x = self.shift_to_origin();
         vec.push(x);
         for _ in 0..3 { x = x.rotate_cc().shift_to_origin(); vec.push(x); }

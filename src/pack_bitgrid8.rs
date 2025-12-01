@@ -138,6 +138,7 @@ impl PackBitGrid8 {
         }
     }
 
+    // TODO: This needs to be tested
     pub fn add_piece(&self, grid: BitGrid8) -> Option<Self> {
         if let Some(packing) = self.packing.add(grid) {
             let mut piece_counts = self.piece_counts.clone();
@@ -145,19 +146,23 @@ impl PackBitGrid8 {
 
             // Reduce piece count by one, removing the piece if none left.
             match piece_counts.entry(piece) {
-                Vacant(_) => { return None },  // Can't remove a piece we don't have
+                Vacant(_) => { return None },  // Can't add a piece we don't have
                 Occupied(x) if *x.get() <= 1 => { x.remove(); },  // Remove final piece from dict
                 Occupied(mut x) => { x.get_mut().sub_assign(1); },
             }
 
             // Remove putative locations that conflict with new piece
-            // let putative_pieces = Self::putative_pieces(packing.fill, &pieces);
+            let putative_pieces = Self::putative_pieces(packing.fill, piece_counts.keys());
+            // Update entropy
+            let entropy = putative_pieces.iter().map(|(piece, locations)| 
+                (piece_counts[piece] as f64) * (locations.len() as f64).log2()).sum();
             
             Some(Self {
+                putative_corners: packing.fill.find_corners(),
                 packing: packing,
                 piece_counts: piece_counts,
-                ..self.clone()
-                // putative_pieces: putative_pieces,
+                putative_pieces: putative_pieces,
+                entropy: entropy,
             })
         } else {
             return None
