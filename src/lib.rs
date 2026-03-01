@@ -23,6 +23,9 @@ pub use crate::bitcube4::*;
 mod bittroc4;
 pub use crate::bittroc4::*;
 
+mod bittroc4_full;
+pub use crate::bittroc4_full::*;
+
 mod bitrhombdo4;
 pub use crate::bitrhombdo4::*;
 
