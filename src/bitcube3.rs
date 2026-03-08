@@ -4,7 +4,10 @@ use std::ops::*;
 use flowscad::*;
 
 use crate::bitlib::*;
-use crate::bitcube4::*;
+// use crate::bitlib::BC3_FULL;
+// use crate::bitlib::swap_mask_shift_u32;
+// TODO: Remove
+use crate::bitcube4::BitCube4;
 
 // use itertools::Itertools;
 
@@ -24,6 +27,7 @@ impl From<u32> for BitCube3 {
     }
 }
 
+/* TODO remove
 /// Embedding a BitCube4 into a BitCube3 by truncated the 4-cube indices
 /// larger than 3. Does not check for lost bits.
 impl From<BitCube4> for BitCube3 {
@@ -36,6 +40,7 @@ impl From<BitCube4> for BitCube3 {
         BitCube3(x as u32)
     }
 }
+*/
 
 
 

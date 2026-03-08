@@ -9,8 +9,7 @@ use arrayvec::*;
 
 use flowscad::*;
 
-use crate::bitlib::swap_mask_shift_u64;
-use crate::bitcube3::BitCube3;
+use crate::bitlib::*;
 
 // use itertools::Itertools;
 
@@ -80,7 +79,7 @@ impl From<u64> for BitCube4 {
         BitCube4(x)
     }
 }
-
+/*
 /// Embedding a BitCube3 into a BitCube4 requires moving the three 3x3
 /// planes into the first three 4x4 planes, while adding a bit to extend
 /// the row length from 3 to 4.
@@ -94,6 +93,7 @@ impl From<BitCube3> for BitCube4 {
         BitCube4(x)
     }
 }
+*/
 
 impl Into<u64> for BitCube4 {
     fn into(self) -> u64 {
@@ -422,7 +422,7 @@ impl fmt::Display for BitCube4 {
 #[cfg(test)]
 mod test {
     use super::*;
-    use crate::bitlib::*;
+    use crate::bitcube3::BitCube3;
 
 
     #[test]
