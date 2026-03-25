@@ -29,7 +29,7 @@ pub mod bitmatrix8;
 
 mod convert;
 mod traits;
-pub use traits::lattice_cubic_simple::LatticeCubicSimple;
+pub use traits::lattice_cubic_simple::LatticeCuboidCubicSimple;
 
 pub use bitcube3::BitCube3;
 pub use bitcube4::BitCube4;
