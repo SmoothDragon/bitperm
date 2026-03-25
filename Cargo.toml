@@ -11,8 +11,8 @@ arrayvec = "0.7.6"
 derive_more = { version = "2.0.1", features = ["add", "add_assign", "from", "mul", "mul_assign"] }
 nonzero = "0.2.0"
 thiserror = "2.0.12"
-# flowscad = "0.1.2"
-flowscad = { path = "../flowscad" }
+flowscad = "0.1.2"
+# flowscad = { path = "../flowscad" }
 
 [dev-dependencies]
 criterion = { version = "0.5.1", features = ["html_reports"] }
