@@ -19,6 +19,7 @@ pub mod bitrhombdo4;
 pub use crate::bitrhombdo4::*;
 
 pub mod bittroc4;
+pub use bittroc4::BitTroc4;
 pub mod bittroc4_full;
 
 pub mod bitgrid8;
