@@ -1,6 +1,6 @@
 /// The example rotates a three cuboid of different lengths joined at the origin.
 
-use bitperm::*;
+use bitperm::BitCube3;
 use flowscad::*;
 use anyhow::Result;
 

@@ -132,13 +132,14 @@ impl From<u64> for BitGrid8 {
     // }
 // }
 
+/*
 impl Iterator for BitGrid8 {
     type Item = Self;
 
     fn next(&mut self) -> Option<Self::Item> {
         let grid:u64 = self.0;
         if grid != 0 {
-            let bit:u64 = grid.isolate_least_significant_one();
+            let bit:u64 = grid.isolate_lowest_one();
             *self = Self(grid ^ bit);
             Some(Self(bit))
         } else {
@@ -146,6 +147,7 @@ impl Iterator for BitGrid8 {
         }
     }
 }
+*/
 
 /// TODO: Can add concavity test search by detecting any rotation of
 /// XX
@@ -155,6 +157,10 @@ impl Iterator for BitGrid8 {
 /// Possibly expand with corners, invert, expand without corners, repeat
 
 impl BitGrid8 {
+    pub fn count_ones(self) -> u32 {
+        self.0.count_ones()
+    }
+
     /// Pentominoes indexed by wikipedia naming convention.
     /// Diagonal presentations are rotated 45 degrees clockwise.
     pub fn pentomino_map() -> HashMap::<char, BitGrid8> {
@@ -911,8 +917,8 @@ mod test {
     fn test_blsi() {
         let n: u64 = 0b_01100100;
 
-        assert_eq!(n.isolate_least_significant_one(), 0b_00000100);
-        assert_eq!(0_u64.isolate_least_significant_one(), 0);
+        assert_eq!(n.isolate_lowest_one(), 0b_00000100);
+        assert_eq!(0_u64.isolate_lowest_one(), 0);
     }
 
 

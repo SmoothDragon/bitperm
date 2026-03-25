@@ -547,6 +547,42 @@ mod test {
     }
 
     #[test]
+    fn test_rotation_order_axes() {
+        let shapes = [
+            BitCube4::from(FULL),
+            BitCube4::from(BC4_CENTER_X),
+            BitCube4::from(BC4_CENTER_Y),
+            BitCube4::from(BC4_CENTER_Z),
+            BitCube4(0x3),
+        ];
+
+        for &shape in &shapes {
+            assert_eq!(shape.rotate_x().rotate_x().rotate_x().rotate_x(), shape);
+            assert_eq!(shape.rotate_y().rotate_y().rotate_y().rotate_y(), shape);
+            assert_eq!(shape.rotate_z().rotate_z().rotate_z().rotate_z(), shape);
+        }
+    }
+
+    #[test]
+    fn test_rotation_order_diagonal() {
+        let shapes = [
+            BitCube4::from(FULL),
+            BitCube4::from(BC4_CENTER_X),
+            BitCube4::from(BC4_CENTER_Y),
+            BitCube4::from(BC4_CENTER_Z),
+            BitCube4::from(SUBCUBE_0),
+            BitCube4(0x3),
+        ];
+
+        for &shape in &shapes {
+            let r1 = shape.rotate_d();
+            let r2 = r1.rotate_d();
+            let r3 = r2.rotate_d();
+            assert_eq!(r3, shape);
+        }
+    }
+
+    #[test]
     fn test_overlap() {
         assert!(BitCube4::from(BC4_CENTER_X).overlap(BitCube4::from(BC4_CENTER_Y)));
     }

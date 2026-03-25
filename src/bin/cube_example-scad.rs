@@ -1,4 +1,4 @@
-use bitperm::*;
+use bitperm::BitCube4;
 use flowscad::*;
 use anyhow::Result;
 

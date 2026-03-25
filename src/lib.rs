@@ -8,38 +8,31 @@ fn print_type<T: std::fmt::Display>(x: &T) {
 }
 
 
-mod bitlib;
-pub use crate::bitlib::*;
+pub mod bitlib;
+pub mod bitperm;
 
-mod bitperm;
-pub use crate::bitperm::*;
+pub mod bitcube3;
+pub mod bitcube4;
+pub mod bitcube8;
 
-mod bitcube3;
-pub use crate::bitcube3::*;
-
-mod bitcube4;
-pub use crate::bitcube4::*;
-
-mod bittroc4;
-pub use crate::bittroc4::*;
-
-mod bittroc4_full;
-pub use crate::bittroc4_full::*;
-
-mod bitrhombdo4;
+pub mod bitrhombdo4;
 pub use crate::bitrhombdo4::*;
 
-mod bitgrid8;
-pub use crate::bitgrid8::*;
+pub mod bittroc4;
+pub mod bittroc4_full;
 
-mod piece_bitgrid8;
-pub use crate::piece_bitgrid8::*;
+pub mod bitgrid8;
+pub mod piece_bitgrid8;
+pub mod pack_bitgrid8;
 
-mod pack_bitgrid8;
-pub use crate::pack_bitgrid8::*;
+pub mod bitmatrix8;
 
-mod bitmatrix8;
-pub use crate::bitmatrix8::*;
+mod convert;
+mod traits;
+pub use traits::lattice_cubic_simple::LatticeCubicSimple;
+
+pub use bitcube3::BitCube3;
+pub use bitcube4::BitCube4;
 
 // TODO: activate these
 // mod bithex8;

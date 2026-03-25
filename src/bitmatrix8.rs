@@ -86,7 +86,7 @@ impl Iterator for BitMatrix8 {
     fn next(&mut self) -> Option<Self::Item> {
         let grid:u64 = self.0;
         if grid != 0 {
-            let bit:u64 = grid.isolate_least_significant_one();
+            let bit:u64 = grid.isolate_lowest_one();
             *self = Self(grid ^ bit);
             Some(Self(bit))
         } else {
@@ -98,7 +98,7 @@ impl Iterator for BitMatrix8 {
     // pub gen fn positions(self) -> impl Iterator<Item = u64> {
         // let mut grid = *self;
         // while grid != 0 {
-            // bit = grid.isolate_least_significant_one();
+            // bit = grid.isolate_lowest_one();
             // grid ^= bit;
             // yield bit;
         // }
@@ -512,8 +512,8 @@ mod test {
     fn test_blsi() {
         let n: u64 = 0b_01100100;
 
-        assert_eq!(n.isolate_least_significant_one(), 0b_00000100);
-        assert_eq!(0_u64.isolate_least_significant_one(), 0);
+        assert_eq!(n.isolate_lowest_one(), 0b_00000100);
+        assert_eq!(0_u64.isolate_lowest_one(), 0);
     }
 
 
