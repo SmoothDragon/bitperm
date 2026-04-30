@@ -2,6 +2,21 @@
 name = "bitperm"
 version = "0.1.0"
 edition = "2021"
+description = "Bit permutations and bit-packed polycube/grid structures in Rust"
+license = "GPL-3.0-or-later"
+repository = "https://github.com/SmoothDragon/bitperm"
+readme = "README.md"
+keywords = ["bit", "permutation", "polycube", "puzzle", "bitset"]
+categories = ["mathematics", "data-structures"]
+exclude = [
+    ".tmux_envrc",
+    ".vscode/*",
+    "criterion.toml",
+    "path_benchmark.rs",
+    "src/_size4.pyx",
+    "src/bin/*.scad",
+    "target/*",
+]
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

@@ -1,4 +1,3 @@
-#![feature(const_trait_impl)]
 #![feature(slice_partition_dedup)]
 #![feature(isolate_most_least_significant_one)]
 
