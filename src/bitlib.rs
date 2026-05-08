@@ -18,7 +18,7 @@ pub fn swap_mask_shift_u64(y: &mut u64, mask: u64, shift: u32) {
     *y ^= (*y).unbounded_shr(shift) & mask;
 }
 
-pub fn sms64(mask: u64, shift: u32) -> Option<impl Fn(&mut u64) -> ()> {
+pub fn sms64(mask: u64, shift: u32) -> Option<impl Fn(&mut u64)> {
     if mask.unbounded_shl(shift) & mask == 0 {
         Some(move |y: &mut u64| swap_mask_shift_u64(y, mask, shift))
     } else {

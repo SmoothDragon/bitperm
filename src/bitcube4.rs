@@ -105,17 +105,17 @@ impl From<BitCube3> for BitCube4 {
 }
 */
 
-impl Into<u64> for BitCube4 {
-    fn into(self) -> u64 {
-        self.0
+impl From<BitCube4> for u64 {
+    fn from(val: BitCube4) -> Self {
+        val.0
     }
 }
 
-impl Into<D3> for BitCube4 {
-    fn into(self) -> D3 {
+impl From<BitCube4> for D3 {
+    fn from(val: BitCube4) -> Self {
         let block = D3::cube(1.0);
         (0..64)
-            .filter(|ii| (self.0 >> ii) & 1 == 1)
+            .filter(|ii| (val.0 >> ii) & 1 == 1)
             .map(|ii| v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4))
             .map(|xyz| block.clone().translate(xyz))
             .union()

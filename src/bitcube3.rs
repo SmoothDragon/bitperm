@@ -60,11 +60,11 @@ impl TryFrom<u64> for BitCube3 {
 }
 */
 
-impl Into<D3> for BitCube3 {
-    fn into(self) -> D3 {
+impl From<BitCube3> for D3 {
+    fn from(val: BitCube3) -> Self {
         let block = D3::cube(1.0);
         (0..27)
-            .filter(|ii| (self.0 >> ii) & 1 == 1)
+            .filter(|ii| (val.0 >> ii) & 1 == 1)
             .map(|ii| v3(ii % 3, (ii / 3) % 3, ii / 9))
             .map(|xyz| block.clone().translate(xyz))
             .union()
