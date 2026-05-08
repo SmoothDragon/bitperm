@@ -236,14 +236,14 @@ impl fmt::Display for OriginBitGrid8 {
             (0..n)
                 .rev()
                 .map(|y| (0..m)
-                    .map(|x| format!(
-                        "{}",
-                        if (self.0 >> (x + 8 * y)) & 0x1 == 1 {
+                    .map(|x| {
+                        (if (self.0 >> (x + 8 * y)) & 0x1 == 1 {
                             "🟥"
                         } else {
                             "⬜"
-                        }
-                    ))
+                        })
+                        .to_string()
+                    })
                     .collect::<String>()
                     + "\n")
                 .collect::<String>()
@@ -493,7 +493,7 @@ mod test {
         // println!("{:}", OriginBitGrid8::new(0xff01_ff80_ff00_0000));
         assert_eq!(
             OriginBitGrid8::from(HIGHFIVE).flip_x(),
-            OriginBitGrid8::new(0xff01_ff80_ff)
+            OriginBitGrid8::new(0x00ff_01ff_80ff)
         );
         assert_eq!(
             OriginBitGrid8::from(SMALL_FIVE).flip_x(),

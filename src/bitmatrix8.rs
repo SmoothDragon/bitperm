@@ -591,12 +591,12 @@ mod test {
     #[test]
     fn test_origin_dihedral_all_pentomino() {
         let pentomino = BitMatrix8::pentomino_map();
-        assert_eq!((&pentomino[&'F']).origin_dihedral_all().len(), 8);
-        assert_eq!((&pentomino[&'N']).origin_dihedral_all().len(), 8);
-        assert_eq!((&pentomino[&'P']).origin_dihedral_all().len(), 8);
-        assert_eq!((&pentomino[&'Y']).origin_dihedral_all().len(), 8);
-        assert_eq!((&pentomino[&'V']).origin_dihedral_all().len(), 4);
-        assert_eq!((&pentomino[&'W']).origin_dihedral_all().len(), 4);
+        assert_eq!(pentomino[&'F'].origin_dihedral_all().len(), 8);
+        assert_eq!(pentomino[&'N'].origin_dihedral_all().len(), 8);
+        assert_eq!(pentomino[&'P'].origin_dihedral_all().len(), 8);
+        assert_eq!(pentomino[&'Y'].origin_dihedral_all().len(), 8);
+        assert_eq!(pentomino[&'V'].origin_dihedral_all().len(), 4);
+        assert_eq!(pentomino[&'W'].origin_dihedral_all().len(), 4);
     }
 
     #[test]
@@ -628,9 +628,9 @@ mod test {
             &pentomino[&'X'],
             &pentomino[&'X'].rotate().shift_to_origin()
         );
-        assert_eq!((&pentomino[&'X']).origin_rotate_all().len(), 1);
-        assert_eq!((&pentomino[&'F']).origin_rotate_all().len(), 4);
-        assert_eq!((&pentomino[&'Z']).origin_rotate_all().len(), 2);
+        assert_eq!(pentomino[&'X'].origin_rotate_all().len(), 1);
+        assert_eq!(pentomino[&'F'].origin_rotate_all().len(), 4);
+        assert_eq!(pentomino[&'Z'].origin_rotate_all().len(), 2);
     }
 
     #[test]

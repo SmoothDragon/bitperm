@@ -50,10 +50,7 @@ impl PackingGrid8 {
             };
             fill |= *piece;
         }
-        Some(Self {
-            fill,
-            pieces,
-        })
+        Some(Self { fill, pieces })
     }
 
     pub fn add(&self, piece: BitGrid8) -> Option<Self> {
@@ -61,16 +58,17 @@ impl PackingGrid8 {
             return None;
         };
 
-        let new_pieces: Vec<BitGrid8> = self
-            .pieces
-            .iter()
-            .map(|x| *x)
-            .chain(std::iter::once(piece))
-            .collect();
+        let new_pieces: Vec<BitGrid8> = self.pieces.iter().copied().chain([piece]).collect();
         Some(Self {
             fill: self.fill | piece,
             pieces: new_pieces,
         })
+    }
+}
+
+impl Default for PackingGrid8 {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -95,16 +93,14 @@ const COLORED_BLOCKS: [&str; 15] = [
 
 impl fmt::Display for PackingGrid8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        let mut array: [&str; 64] = [&COLORED_BLOCKS[0]; 64];
-        let mut count: usize = 1;
-        for grid in &self.pieces {
+        let mut array: [&str; 64] = [COLORED_BLOCKS[0]; 64];
+        for (count, grid) in (1_usize..).zip(self.pieces.iter()) {
             // TODO: this can be sped up by a better iterator
-            for ii in 0..64 {
+            for (ii, cell) in array.iter_mut().enumerate() {
                 if (grid.0 >> ii) & 1 == 1 {
-                    array[ii] = &COLORED_BLOCKS[count];
+                    *cell = COLORED_BLOCKS[count];
                 }
             }
-            count += 1;
         }
         write!(
             f,
@@ -196,7 +192,7 @@ impl PackBitGrid8 {
                 entropy,
             })
         } else {
-            return None;
+            None
         }
     }
 
@@ -386,14 +382,14 @@ impl fmt::Display for PackBitGrid8 {
             (0..8)
                 .rev()
                 .map(|y| (0..8)
-                    .map(|x| format!(
-                        "{}",
-                        if (self.packing.fill.0 >> (x + 8 * y)) & 0x1 == 1 {
+                    .map(|x| {
+                        (if (self.packing.fill.0 >> (x + 8 * y)) & 0x1 == 1 {
                             "\u{2B1B}"
                         } else {
                             "⬜"
-                        }
-                    ))
+                        })
+                        .to_string()
+                    })
                     .collect::<String>()
                     + "\n")
                 .collect::<String>()

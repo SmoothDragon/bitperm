@@ -211,7 +211,6 @@ impl Iterator for BitGrid8 {
 ///
 /// TODO: Is there convex hull operation?
 /// Possibly expand with corners, invert, expand without corners, repeat
-
 impl BitGrid8 {
     pub fn count_ones(self) -> u32 {
         self.0.count_ones()
@@ -665,10 +664,7 @@ mod test {
         );
 
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!(
-            (*(&pentomino[&'F']) << 24).shift_to_origin(),
-            pentomino[&'F']
-        );
+        assert_eq!((pentomino[&'F'] << 24).shift_to_origin(), pentomino[&'F']);
     }
 
     #[test]
@@ -739,7 +735,7 @@ mod test {
         println!("{}", BitGrid8::from(CENTER_XY).find_corners_nw());
         assert_eq!(
             BitGrid8::from(CENTER_XY).find_corners_nw(),
-            BitGrid8::from(0x210000000021_0000)
+            BitGrid8::from(0x2100_0000_0021_0000)
         );
 
         let pentomino = BitGrid8::pentomino_map();
@@ -914,8 +910,8 @@ mod test {
         assert_eq!(BitGrid8::from(FULL).shift_x(8), BitGrid8::from(0));
 
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!((*(&pentomino[&'F'])).shift_x(1), BitGrid8::from(0x4060c));
-        assert_eq!((*(&pentomino[&'F'])).shift_x(-1), BitGrid8::from(0x10103));
+        assert_eq!(pentomino[&'F'].shift_x(1), BitGrid8::from(0x4060c));
+        assert_eq!(pentomino[&'F'].shift_x(-1), BitGrid8::from(0x10103));
     }
 
     #[test]
@@ -925,10 +921,10 @@ mod test {
 
         let pentomino = BitGrid8::pentomino_map();
         assert_eq!(
-            (*(&pentomino[&'F'])).checked_shift_x(1),
+            pentomino[&'F'].checked_shift_x(1),
             Some(BitGrid8::from(0x4060c))
         );
-        assert_eq!((*(&pentomino[&'F'])).checked_shift_x(-1), None);
+        assert_eq!(pentomino[&'F'].checked_shift_x(-1), None);
     }
 
     #[test]
@@ -955,8 +951,8 @@ mod test {
         assert_eq!(BitGrid8::from(0xf00f00).shift_y(-1), BitGrid8::from(0xf00f));
 
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!((*(&pentomino[&'F'])).shift_y(1), BitGrid8::from(0x2030600));
-        assert_eq!((*(&pentomino[&'F'])).shift_y(-1), BitGrid8::from(0x203));
+        assert_eq!(pentomino[&'F'].shift_y(1), BitGrid8::from(0x2030600));
+        assert_eq!(pentomino[&'F'].shift_y(-1), BitGrid8::from(0x203));
     }
 
     #[test]
@@ -971,10 +967,10 @@ mod test {
 
         let pentomino = BitGrid8::pentomino_map();
         assert_eq!(
-            (*(&pentomino[&'F'])).checked_shift_y(1),
+            pentomino[&'F'].checked_shift_y(1),
             Some(BitGrid8::from(0x2030600))
         );
-        assert_eq!((*(&pentomino[&'F'])).checked_shift_y(-1), None);
+        assert_eq!(pentomino[&'F'].checked_shift_y(-1), None);
     }
 
     #[test]
@@ -991,19 +987,10 @@ mod test {
         assert_eq!(BitGrid8::from(FULL).shift_xy(1, 8), BitGrid8::from(0));
 
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!(
-            (*(&pentomino[&'F'])).shift_xy(1, 1),
-            BitGrid8::from(0x4060c00)
-        );
-        assert_eq!((*(&pentomino[&'F'])).shift_xy(1, -1), BitGrid8::from(0x406));
-        assert_eq!(
-            (*(&pentomino[&'F'])).shift_xy(-1, 1),
-            BitGrid8::from(0x1010300)
-        );
-        assert_eq!(
-            (*(&pentomino[&'F'])).shift_xy(-1, -1),
-            BitGrid8::from(0x101)
-        );
+        assert_eq!(pentomino[&'F'].shift_xy(1, 1), BitGrid8::from(0x4060c00));
+        assert_eq!(pentomino[&'F'].shift_xy(1, -1), BitGrid8::from(0x406));
+        assert_eq!(pentomino[&'F'].shift_xy(-1, 1), BitGrid8::from(0x1010300));
+        assert_eq!(pentomino[&'F'].shift_xy(-1, -1), BitGrid8::from(0x101));
     }
 
     #[test]
@@ -1013,12 +1000,12 @@ mod test {
 
         let pentomino = BitGrid8::pentomino_map();
         assert_eq!(
-            (*(&pentomino[&'F'])).checked_shift_xy(1, 1),
+            pentomino[&'F'].checked_shift_xy(1, 1),
             Some(BitGrid8::from(0x4060c00))
         );
-        assert_eq!((*(&pentomino[&'F'])).checked_shift_xy(1, -1), None);
-        assert_eq!((*(&pentomino[&'F'])).checked_shift_xy(-1, 1), None);
-        assert_eq!((*(&pentomino[&'F'])).checked_shift_xy(-1, -1), None);
+        assert_eq!(pentomino[&'F'].checked_shift_xy(1, -1), None);
+        assert_eq!(pentomino[&'F'].checked_shift_xy(-1, 1), None);
+        assert_eq!(pentomino[&'F'].checked_shift_xy(-1, -1), None);
     }
 
     #[test]
@@ -1074,11 +1061,11 @@ mod test {
     #[test]
     fn test_bounding_box_pentomino() {
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!((&pentomino[&'F']).bounding_box(), (3, 3));
-        assert_eq!((&pentomino[&'I']).bounding_box(), (1, 5));
-        assert_eq!((&pentomino[&'L']).bounding_box(), (2, 4));
-        assert_eq!((&pentomino[&'P']).bounding_box(), (2, 3));
-        assert_eq!((&pentomino[&'W']).bounding_box(), (3, 3));
+        assert_eq!(pentomino[&'F'].bounding_box(), (3, 3));
+        assert_eq!(pentomino[&'I'].bounding_box(), (1, 5));
+        assert_eq!(pentomino[&'L'].bounding_box(), (2, 4));
+        assert_eq!(pentomino[&'P'].bounding_box(), (2, 3));
+        assert_eq!(pentomino[&'W'].bounding_box(), (3, 3));
     }
 
     #[test]
@@ -1095,11 +1082,11 @@ mod test {
     #[test]
     fn test_origin_bounding_box_pentomino() {
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!((&pentomino[&'F']).bounding_box(), (3, 3));
-        assert_eq!((&pentomino[&'I']).bounding_box(), (1, 5));
-        assert_eq!((&pentomino[&'L']).bounding_box(), (2, 4));
-        assert_eq!((&pentomino[&'P']).bounding_box(), (2, 3));
-        assert_eq!((&pentomino[&'W']).bounding_box(), (3, 3));
+        assert_eq!(pentomino[&'F'].bounding_box(), (3, 3));
+        assert_eq!(pentomino[&'I'].bounding_box(), (1, 5));
+        assert_eq!(pentomino[&'L'].bounding_box(), (2, 4));
+        assert_eq!(pentomino[&'P'].bounding_box(), (2, 3));
+        assert_eq!(pentomino[&'W'].bounding_box(), (3, 3));
     }
 
     // #[test]
@@ -1254,12 +1241,12 @@ mod test {
     #[test]
     fn test_origin_dihedral_all_pentomino() {
         let pentomino = BitGrid8::pentomino_map();
-        assert_eq!((&pentomino[&'F']).origin_dihedral_all().len(), 8);
-        assert_eq!((&pentomino[&'N']).origin_dihedral_all().len(), 8);
-        assert_eq!((&pentomino[&'P']).origin_dihedral_all().len(), 8);
-        assert_eq!((&pentomino[&'Y']).origin_dihedral_all().len(), 8);
-        assert_eq!((&pentomino[&'V']).origin_dihedral_all().len(), 4);
-        assert_eq!((&pentomino[&'W']).origin_dihedral_all().len(), 4);
+        assert_eq!(pentomino[&'F'].origin_dihedral_all().len(), 8);
+        assert_eq!(pentomino[&'N'].origin_dihedral_all().len(), 8);
+        assert_eq!(pentomino[&'P'].origin_dihedral_all().len(), 8);
+        assert_eq!(pentomino[&'Y'].origin_dihedral_all().len(), 8);
+        assert_eq!(pentomino[&'V'].origin_dihedral_all().len(), 4);
+        assert_eq!(pentomino[&'W'].origin_dihedral_all().len(), 4);
     }
 
     #[test]
@@ -1276,9 +1263,9 @@ mod test {
             &pentomino[&'X'],
             &pentomino[&'X'].rotate().shift_to_origin()
         );
-        assert_eq!((&pentomino[&'X']).origin_rotate_all().len(), 1);
-        assert_eq!((&pentomino[&'F']).origin_rotate_all().len(), 4);
-        assert_eq!((&pentomino[&'Z']).origin_rotate_all().len(), 2);
+        assert_eq!(pentomino[&'X'].origin_rotate_all().len(), 1);
+        assert_eq!(pentomino[&'F'].origin_rotate_all().len(), 4);
+        assert_eq!(pentomino[&'Z'].origin_rotate_all().len(), 2);
     }
 
     #[test]

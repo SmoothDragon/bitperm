@@ -43,8 +43,8 @@ impl BitTroc4Full {
         Self(self.0.shift_z(shift), self.1.shift_z(shift))
     }
 
-    /// Given a piece in the 4-cube, shift it towards the origin so that it touches the x, y, and z
-    /// planes
+    // /// Given a piece in the 4-cube, shift it towards the origin so that it touches the x, y, and z
+    // /// planes
     // pub fn shift_to_origin(self) -> Self {
     // let mut shape = self.0;
     // let z_shift = (shape.trailing_zeros() / 16) * 16;
