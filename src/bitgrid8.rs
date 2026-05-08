@@ -553,12 +553,12 @@ impl BitGrid8 {
         shape |= ((shape >> 4) & 0x0f0f0f0f0f0f0f0f) | shape >> 32;
         let len_x = (shape & 0xff).count_ones();
         let len_y = (shape & 0x0101010101010101).count_ones();
-        (len_x as u32, len_y as u32)
+        (len_x, len_y)
     }
 
     /// Shifts off the side are lost.
     pub fn shift_x(self, shift: i32) -> Self {
-        if shift > 7 || shift < -7 {
+        if !(-7..=7).contains(&shift) {
             return Self(0);
         };
         if shift == 0 {
@@ -586,7 +586,7 @@ impl BitGrid8 {
 
     /// Shifts off the side are lost.
     pub fn shift_y(self, shift: i32) -> Self {
-        if shift > 7 || shift < -7 {
+        if !(-7..=7).contains(&shift) {
             return Self(0);
         };
         if shift == 0 {

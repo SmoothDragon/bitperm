@@ -173,7 +173,7 @@ impl BitPara8 {
 
     /// Shifts off the side are lost.
     pub fn shift_x(self, shift: i32) -> Self { 
-        if shift > 7 || shift < -7 { return Self(0) };
+        if !(-7..=7).contains(&shift) { return Self(0) };
         if shift == 0 { return self };
         let sign = shift > 0;
         let shift: u32 = shift.unsigned_abs();
@@ -197,7 +197,7 @@ impl BitPara8 {
 
     /// Shifts off the side are lost.
     pub fn shift_y(self, shift: i32) -> Self { 
-        if shift > 7 || shift < -7 { return Self(0) };
+        if !(-7..=7).contains(&shift) { return Self(0) };
         if shift == 0 { return self };
         let sign = shift > 0;
         let shift: u32 = shift.unsigned_abs().unbounded_shl(3);  // Shift by multiples of 8

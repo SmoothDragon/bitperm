@@ -295,7 +295,7 @@ impl BitMatrix8 {
 
     /// Shifts off the side are lost.
     pub fn shift_x(self, shift: i32) -> Self {
-        if shift > 7 || shift < -7 {
+        if !(-7..=7).contains(&shift) {
             return Self(0);
         };
         if shift == 0 {
@@ -325,7 +325,7 @@ impl BitMatrix8 {
 
     /// Shifts off the side are lost.
     pub fn shift_y(self, shift: i32) -> Self {
-        if shift > 7 || shift < -7 {
+        if !(-7..=7).contains(&shift) {
             return Self(0);
         };
         if shift == 0 {
