@@ -742,6 +742,118 @@ impl BitGrid8 {
 #[cfg(test)]
 mod test {
     use super::*;
+    use crate::traits::BitGrid;
+
+    #[test]
+    fn test_bitgrid8_debug() {
+        assert_eq!(
+            format!("{:?}", BitGrid8(0xabc_u64)),
+            "BitGrid8(0x00000abc)"
+        );
+    }
+
+    #[test]
+    fn test_count_ones() {
+        assert_eq!(BitGrid8::from(FULL).count_ones(), 64);
+        assert_eq!(BitGrid8(0).count_ones(), 0);
+        assert_eq!(BitGrid8::from(0x303).count_ones(), 4);
+    }
+
+    #[test]
+    fn test_has_overlap() {
+        assert!(BitGrid8::from(FULL).has_overlap(BitGrid8(1)));
+        assert!(!BitGrid8::from(0x0f_u64).has_overlap(BitGrid8::from(0xf0_u64)));
+    }
+
+    #[test]
+    fn test_is_empty() {
+        assert!(BitGrid8(0).is_empty());
+        assert!(!BitGrid8(1).is_empty());
+    }
+
+    #[test]
+    fn test_shr_isize() {
+        assert_eq!(BitGrid8(1) >> 1_isize, BitGrid8(0));
+        assert_eq!(BitGrid8(1) >> (-1_isize), BitGrid8(2));
+    }
+
+    #[test]
+    fn test_shl_isize() {
+        assert_eq!(BitGrid8(1) << 4_isize, BitGrid8(0x10));
+        assert_eq!(BitGrid8(0x10) << (-4_isize), BitGrid8(1));
+    }
+
+    #[test]
+    fn test_mirror_y_involution() {
+        let g = BitGrid8::pentomino_map()[&'F'];
+        assert_eq!(g.mirror_y().mirror_y(), g);
+        assert_eq!(BitGrid8::from(0b10).mirror_y(), BitGrid8::from(1 << 6));
+    }
+
+    #[test]
+    fn test_rotate_c4() {
+        let g = BitGrid8::pentomino_map()[&'F'];
+        assert_eq!(g.rotate_c4(0), g);
+        assert_eq!(g.rotate_c4(1), g.rotate_cc());
+        assert_eq!(g.rotate_c4(2), g.rotate_cc().rotate_cc());
+        assert_eq!(g.rotate_c4(3), g.rotate());
+        assert_eq!(g.rotate_c4(4), g);
+        assert_eq!(g.rotate_c4(-1), g.rotate_c4(3));
+        assert_eq!(g.rotate_c4(isize::MIN), g.rotate_c4(0));
+    }
+
+    #[test]
+    fn test_cycle_x_cycle_y() {
+        assert_eq!(BitGrid8(1).cycle_x(1), BitGrid8(2));
+        assert_eq!(BitGrid8(1).cycle_x(8), BitGrid8(1));
+        assert_eq!(BitGrid8(1).cycle_x(-1), BitGrid8(1 << 7));
+        assert_eq!(BitGrid8(2).cycle_x(-1), BitGrid8(1));
+
+        assert_eq!(BitGrid8(1).cycle_y(1), BitGrid8(1 << 8));
+        assert_eq!(BitGrid8(1).cycle_y(8), BitGrid8(1));
+        assert_eq!(BitGrid8(1).cycle_y(-1), BitGrid8(1 << 56));
+        assert_eq!(BitGrid8(1 << 8).cycle_y(-1), BitGrid8(1));
+    }
+
+    #[test]
+    fn test_iterate_bits_and_coords() {
+        let pentomino = BitGrid8::pentomino_map();
+        let i = pentomino[&'I'];
+        assert_eq!(
+            i.iterate_bits().collect::<Vec<_>>(),
+            i.into_iter().collect::<Vec<_>>()
+        );
+        assert_eq!(
+            i.iterate_coords().collect::<Vec<_>>(),
+            vec![(0, 0), (0, 1), (0, 2), (0, 3), (0, 4)]
+        );
+    }
+
+    #[test]
+    fn test_count_2x2_antimask() {
+        assert_eq!(BitGrid8(0).count_2x2_antimask(0), 0);
+        let g = BitGrid8::from(0x303_u64);
+        assert_eq!(g.count_2x2_blocks(), 1);
+        assert_eq!(g.count_2x2_antimask(0), 1);
+    }
+
+    #[test]
+    fn test_count_antidiagonal_2x2_blocks() {
+        assert_eq!(BitGrid8(0).count_antidiagonal_2x2_blocks(), 0);
+        assert_eq!(
+            BitGrid8::from(CHECKER2).count_antidiagonal_2x2_blocks(),
+            1
+        );
+    }
+
+    #[test]
+    fn test_origin_dihedral_all_vec_matches_arrayvec() {
+        for &raw in &[0x103_u64, CENTER_XY, HIGHFIVE, CHECKER2] {
+            let g = BitGrid8::from(raw);
+            let v: Vec<BitGrid8> = g.origin_dihedral_all().iter().copied().collect();
+            assert_eq!(g.origin_dihedral_all_vec(), v, "raw={raw:#x}");
+        }
+    }
 
     #[test]
     fn test_bitgrid8_display() {
