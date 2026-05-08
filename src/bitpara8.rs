@@ -2,7 +2,7 @@ use std::fmt;
 // use std::ops::*;
 use std::collections::HashMap;
 
-use crate::bitgrid8::BitGrid8;
+use crate::bitgrid_8x8::BitGrid8x8;
 
 use derive_more::*;
 use arrayvec::*;
@@ -44,7 +44,7 @@ pub struct BitPara8(pub u64);
 
 impl fmt::Debug for BitPara8 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "BitGrid8({:#010x})", self.0)
+        write!(f, "BitPara8({:#010x})", self.0)
     } 
 } 
 
@@ -97,7 +97,7 @@ impl BitPara8 {
     /// Rotate 180 degrees
     #[inline]
     pub fn rotate_180(self) -> Self { 
-        // let mut grid: u64 = BitGrid8(self.0).rotate_180().0.unbounded_shr(4);
+        // let mut grid: u64 = BitGrid8x8(self.0).rotate_180().0.unbounded_shr(4);
         let mut grid: u64 = self.0;
         // Swap 4x4 squares
         swap_mask_shift_u64(&mut grid, 0x0f0f_0f0f, 36);
@@ -179,9 +179,9 @@ impl BitPara8 {
         let shift: u32 = shift.unsigned_abs();
         let mask: u64 = ((1_u64 << (8_u32-shift)) - 1_u64) * 0x0101_0101_0101_0101_u64;
         if sign {
-            BitGrid8((mask & self.0).unbounded_shl(shift))
+            BitGrid8x8((mask & self.0).unbounded_shl(shift))
         } else {
-            BitGrid8(mask & self.0.unbounded_shr(shift))
+            BitGrid8x8(mask & self.0.unbounded_shr(shift))
         }
     }
 
@@ -204,9 +204,9 @@ impl BitPara8 {
         // let mask: u64 = ((1_u64 << (8_u32-shift)) - 1_u64) * 0x0101_0101_0101_0101_u64;
         let mask: u64 = 0xffff_ffff_ffff_ffff_u64.unbounded_shr(shift);
         if sign {
-            BitGrid8((mask & self.0).unbounded_shl(shift))
+            BitGrid8x8((mask & self.0).unbounded_shl(shift))
         } else {
-            BitGrid8(mask & self.0.unbounded_shr(shift))
+            BitGrid8x8(mask & self.0.unbounded_shr(shift))
         }
     }
 

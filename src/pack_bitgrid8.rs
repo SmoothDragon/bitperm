@@ -6,9 +6,9 @@
 // frame: BitGrit8 => This marks the original puzzle frame. Black. (May be first piece?)
 // fill: BitGrit8 => Current packing state. Starts equal to frame.
 // piece_counts: { OriginBitGrid8 -> count: usize } => Copies to be used of each piece.
-// putative_pieces: { OriginBitGrid8 -> Vec<BitGrid8> }
+// putative_pieces: { OriginBitGrid8 -> Vec<BitGrid8x8> }
 //      => valid locations where a piece can still fit.
-//  cover: { loc: usize -> Vec<BitGrid8> }
+//  cover: { loc: usize -> Vec<BitGrid8x8> }
 //      => valid piece placements that cover bit at (1 << loc)
 // -----------------------------------------------------------------
 
@@ -24,25 +24,25 @@ use std::{
 // use thiserror::*;
 // use arrayvec::*;
 
-use crate::bitgrid8::*;
+use crate::bitgrid_8x8::*;
 use crate::piece_bitgrid8::*;
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PackingGrid8 {
-    fill: BitGrid8,
-    pieces: Vec<BitGrid8>,
+    fill: BitGrid8x8,
+    pieces: Vec<BitGrid8x8>,
 }
 
 impl PackingGrid8 {
     pub fn new() -> Self {
         Self {
-            fill: BitGrid8(0),
+            fill: BitGrid8x8(0),
             pieces: vec![],
         }
     }
 
-    pub fn from_vec(pieces: Vec<BitGrid8>) -> Option<Self> {
-        let mut fill = BitGrid8(0);
+    pub fn from_vec(pieces: Vec<BitGrid8x8>) -> Option<Self> {
+        let mut fill = BitGrid8x8(0);
 
         for piece in &pieces {
             if fill.has_overlap(*piece) {
@@ -53,12 +53,12 @@ impl PackingGrid8 {
         Some(Self { fill, pieces })
     }
 
-    pub fn add(&self, piece: BitGrid8) -> Option<Self> {
+    pub fn add(&self, piece: BitGrid8x8) -> Option<Self> {
         if self.fill.has_overlap(piece) {
             return None;
         };
 
-        let new_pieces: Vec<BitGrid8> = self.pieces.iter().copied().chain([piece]).collect();
+        let new_pieces: Vec<BitGrid8x8> = self.pieces.iter().copied().chain([piece]).collect();
         Some(Self {
             fill: self.fill | piece,
             pieces: new_pieces,
@@ -131,14 +131,14 @@ impl fmt::Display for PackingGrid8 {
 pub struct PackBitGrid8 {
     packing: PackingGrid8, // List of placed pieces. The first piece should be the frame (black).
     piece_counts: HashMap<D4CanonicalGrid8, usize>, // Number of available copies of each piece.
-    putative_pieces: HashMap<D4CanonicalGrid8, Vec<BitGrid8>>, // valid locations where a piece can still fit.
-    putative_corners: BitGrid8,
+    putative_pieces: HashMap<D4CanonicalGrid8, Vec<BitGrid8x8>>, // valid locations where a piece can still fit.
+    putative_corners: BitGrid8x8,
     entropy: f64,
-    // domino_covers: HashMap<BitGrid8, Vec<BitGrid8>>,  // valid piece placements that cover a given domino
+    // domino_covers: HashMap<BitGrid8x8, Vec<BitGrid8x8>>,  // valid piece placements that cover a given domino
 }
 
 impl PackBitGrid8 {
-    pub fn new(frame: BitGrid8, piece_counts: HashMap<D4CanonicalGrid8, usize>) -> Self {
+    pub fn new(frame: BitGrid8x8, piece_counts: HashMap<D4CanonicalGrid8, usize>) -> Self {
         let putative_pieces = Self::putative_pieces(frame, piece_counts.keys());
         let entropy = putative_pieces
             .iter()
@@ -158,7 +158,7 @@ impl PackBitGrid8 {
     }
 
     // TODO: This needs to be tested
-    pub fn add_piece(&self, grid: BitGrid8) -> Option<Self> {
+    pub fn add_piece(&self, grid: BitGrid8x8) -> Option<Self> {
         if let Some(packing) = self.packing.add(grid) {
             let mut piece_counts = self.piece_counts.clone();
             let piece = D4CanonicalGrid8::from(grid);
@@ -196,8 +196,8 @@ impl PackBitGrid8 {
         }
     }
 
-    // pub fn putative_pieces(frame: BitGrid8, pieces: &Vec<OriginBitGrid8>) -> HashMap<OriginBitGrid8, Vec<BitGrid8>> {
-    // let mut putative_pieces = HashMap::<OriginBitGrid8, Vec<BitGrid8>>::new();
+    // pub fn putative_pieces(frame: BitGrid8x8, pieces: &Vec<OriginBitGrid8>) -> HashMap<OriginBitGrid8, Vec<BitGrid8x8>> {
+    // let mut putative_pieces = HashMap::<OriginBitGrid8, Vec<BitGrid8x8>>::new();
     // for &piece in pieces {
     // putative_pieces.insert(piece.canonical(), Self::piece_placement(frame, piece));
     // }
@@ -205,13 +205,13 @@ impl PackBitGrid8 {
     // }
 
     pub fn putative_pieces<'a, I>(
-        frame: BitGrid8,
+        frame: BitGrid8x8,
         pieces: I,
-    ) -> HashMap<D4CanonicalGrid8, Vec<BitGrid8>>
+    ) -> HashMap<D4CanonicalGrid8, Vec<BitGrid8x8>>
     where
         I: IntoIterator<Item = &'a D4CanonicalGrid8>,
     {
-        let mut putative_pieces = HashMap::<D4CanonicalGrid8, Vec<BitGrid8>>::new();
+        let mut putative_pieces = HashMap::<D4CanonicalGrid8, Vec<BitGrid8x8>>::new();
         for &piece in pieces.into_iter() {
             putative_pieces.insert(piece, Self::piece_placement(frame, piece));
         }
@@ -230,8 +230,8 @@ impl PackBitGrid8 {
         piece_counts
     }
 
-    pub fn piece_placement(frame: BitGrid8, piece: D4CanonicalGrid8) -> Vec<BitGrid8> {
-        let mut good = Vec::<BitGrid8>::new();
+    pub fn piece_placement(frame: BitGrid8x8, piece: D4CanonicalGrid8) -> Vec<BitGrid8x8> {
+        let mut good = Vec::<BitGrid8x8>::new();
         for putative in piece.symmetry_d4() {
             let grid = putative.grid;
             let (m, n) = putative.xy;
@@ -263,9 +263,9 @@ impl PackBitGrid8 {
         best_piece
     }
 
-    pub fn next_domino(&self) -> BitGrid8 {
+    pub fn next_domino(&self) -> BitGrid8x8 {
         let mut best_count = 1000000;
-        let mut best_domino = BitGrid8(0);
+        let mut best_domino = BitGrid8x8(0);
         for (domino, domino_list) in &self.domino_covers {
             let count = domino_list.len();
             if count < best_count {
@@ -277,9 +277,9 @@ impl PackBitGrid8 {
     }
     */
 
-    // pub fn next_corner(&self) -> BitGrid8 {
+    // pub fn next_corner(&self) -> BitGrid8x8 {
     // let mut best_count = 1000000;
-    // let mut best_corner = BitGrid8(0);
+    // let mut best_corner = BitGrid8x8(0);
     // for (domino, domino_list) in &self.domino_covers {
     // let count = domino_list.len();
     // if count < best_count {
@@ -293,10 +293,10 @@ impl PackBitGrid8 {
     /// Return all the pieces that cover a corner.
     /// This assumes that all piece locations do not intersect with the filled area.
     pub fn corner_covers(
-        filled: BitGrid8,
-        putative_pieces: &HashMap<D4CanonicalGrid8, Vec<BitGrid8>>,
-    ) -> Vec<BitGrid8> {
-        let mut corner_pieces = Vec::<BitGrid8>::new();
+        filled: BitGrid8x8,
+        putative_pieces: &HashMap<D4CanonicalGrid8, Vec<BitGrid8x8>>,
+    ) -> Vec<BitGrid8x8> {
+        let mut corner_pieces = Vec::<BitGrid8x8>::new();
         let corners = filled.find_corners();
 
         for piece_grid in putative_pieces.values() {
@@ -311,9 +311,9 @@ impl PackBitGrid8 {
 
     /*
     pub fn next_corner(
-        filled: BitGrid8,
-        corner_pieces: &Vec<BitGrid8>
-        ) -> BitGrid8
+        filled: BitGrid8x8,
+        corner_pieces: &Vec<BitGrid8x8>
+        ) -> BitGrid8x8
     {
         let corners = filled.find_corners();
 
@@ -330,10 +330,10 @@ impl PackBitGrid8 {
 
     // For each non-fill domino, return a list of the available pieces that can cover it.
     pub fn domino_covers(
-        filled: BitGrid8,
-        putative_pieces: &HashMap<D4CanonicalGrid8, Vec<BitGrid8>>,
-    ) -> HashMap<BitGrid8, Vec<BitGrid8>> {
-        let mut domino_location = HashMap::<BitGrid8, Vec<BitGrid8>>::new();
+        filled: BitGrid8x8,
+        putative_pieces: &HashMap<D4CanonicalGrid8, Vec<BitGrid8x8>>,
+    ) -> HashMap<BitGrid8x8, Vec<BitGrid8x8>> {
+        let mut domino_location = HashMap::<BitGrid8x8, Vec<BitGrid8x8>>::new();
         for ii in 0..7 {
             for jj in 0..8 {
                 let pos_x = ii + 8 * jj;
@@ -341,7 +341,7 @@ impl PackBitGrid8 {
                 if block_x & filled.0 != 0 {
                     continue;
                 };
-                let mut cover_x = Vec::<BitGrid8>::new();
+                let mut cover_x = Vec::<BitGrid8x8>::new();
                 for piece_grid in putative_pieces.values() {
                     for &grid in piece_grid {
                         if grid.0 & block_x == block_x {
@@ -349,7 +349,7 @@ impl PackBitGrid8 {
                         }
                     }
                 }
-                domino_location.insert(BitGrid8(block_x), cover_x);
+                domino_location.insert(BitGrid8x8(block_x), cover_x);
             }
         }
         for ii in 0..7 {
@@ -359,7 +359,7 @@ impl PackBitGrid8 {
                 if block_y & filled.0 != 0 {
                     continue;
                 };
-                let mut cover_y = Vec::<BitGrid8>::new();
+                let mut cover_y = Vec::<BitGrid8x8>::new();
                 for piece_grid in putative_pieces.values() {
                     for &grid in piece_grid {
                         if grid.0 & block_y == block_y {
@@ -367,7 +367,7 @@ impl PackBitGrid8 {
                         }
                     }
                 }
-                domino_location.insert(BitGrid8(block_y), cover_y);
+                domino_location.insert(BitGrid8x8(block_y), cover_y);
             }
         }
         domino_location
@@ -403,7 +403,7 @@ mod test {
 
     // #[test]
     // fn test_pack_bitgrid8_new() {
-    // assert_eq!(PackBitGrid8::new(BitGrid8(0x1818000000), OriginBitGrid8::pentomino_map().into_values().map(|x| (x, 1_usize)).collect::<HashMap<OriginBitGrid8, usize>>()).piece_counts,
+    // assert_eq!(PackBitGrid8::new(BitGrid8x8(0x1818000000), OriginBitGrid8::pentomino_map().into_values().map(|x| (x, 1_usize)).collect::<HashMap<OriginBitGrid8, usize>>()).piece_counts,
     // HashMap::from([(OriginBitGrid8::new(0x03010101), 1), (OriginBitGrid8::new(0x00070101), 1), (OriginBitGrid8::new(0x00000f04), 1), (OriginBitGrid8::new(0x00060301), 1), (OriginBitGrid8::new(0x101010101), 1), (OriginBitGrid8::new(0x00000705), 1), (OriginBitGrid8::new(0x00020207), 1), (OriginBitGrid8::new(0x00010303), 1), (OriginBitGrid8::new(0x00020306), 1), (OriginBitGrid8::new(0x00060203), 1), (OriginBitGrid8::new(0x00020702), 1), (OriginBitGrid8::new(0x00000e03), 1)]))
     // }
 
@@ -412,8 +412,8 @@ mod test {
     fn test_pack_bitgrid8_display() {
         // assert_eq!(Some(OriginBitGrid8::pentomino_map().values().collect::<Vec<_>>()), None);
         // println!("{}", PackBitGrid8::new(0x1818000000, OriginBitGrid8::pentomino_map().values()));
-        assert_eq!(format!("{}", PackBitGrid8::new(BitGrid8(0x1818000000), OriginBitGrid8::pentomino_map().into_values().map(|x| (x, 1_usize)).collect::<HashMap<OriginBitGrid8, usize>>())),
-        // assert_eq!(format!("{}", PackBitGrid8::new(BitGrid8(0x1818000000), OriginBitGrid8::pentomino_map().into_values().collect::<Vec<_>>())),
+        assert_eq!(format!("{}", PackBitGrid8::new(BitGrid8x8(0x1818000000), OriginBitGrid8::pentomino_map().into_values().map(|x| (x, 1_usize)).collect::<HashMap<OriginBitGrid8, usize>>())),
+        // assert_eq!(format!("{}", PackBitGrid8::new(BitGrid8x8(0x1818000000), OriginBitGrid8::pentomino_map().into_values().collect::<Vec<_>>())),
         "⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬛⬛⬜⬜⬜\n⬜⬜⬜⬛⬛⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n");
     }
     */
@@ -422,28 +422,28 @@ mod test {
     fn test_packing_grid8_display() {
         assert_eq!(format!("{}", PackingGrid8::new()),
         "⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n");
-        assert_eq!(format!("{}", PackingGrid8::from_vec(vec![BitGrid8(0x1818000000)]).unwrap()),
+        assert_eq!(format!("{}", PackingGrid8::from_vec(vec![BitGrid8x8(0x1818000000)]).unwrap()),
         "⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬛⬛⬜⬜⬜\n⬜⬜⬜⬛⬛⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n");
-        assert_eq!(format!("{}", PackingGrid8::from_vec(vec![BitGrid8(0x1818000000), BitGrid8(0x20306)]).unwrap()),
+        assert_eq!(format!("{}", PackingGrid8::from_vec(vec![BitGrid8x8(0x1818000000), BitGrid8x8(0x20306)]).unwrap()),
         "⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬛⬛⬜⬜⬜\n⬜⬜⬜⬛⬛⬜⬜⬜\n⬜🟥⬜⬜⬜⬜⬜⬜\n🟥🟥⬜⬜⬜⬜⬜⬜\n⬜🟥🟥⬜⬜⬜⬜⬜\n");
-        assert_eq!(format!("{}", PackingGrid8::from_vec(vec![BitGrid8(0x1818000000), BitGrid8(0x20306), BitGrid8(0x203060)]).unwrap()),
+        assert_eq!(format!("{}", PackingGrid8::from_vec(vec![BitGrid8x8(0x1818000000), BitGrid8x8(0x20306), BitGrid8x8(0x203060)]).unwrap()),
         "⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬜⬜⬜⬜⬜\n⬜⬜⬜⬛⬛⬜⬜⬜\n⬜⬜⬜⬛⬛⬜⬜⬜\n⬜🟥⬜⬜⬜🟦⬜⬜\n🟥🟥⬜⬜🟦🟦⬜⬜\n⬜🟥🟥⬜⬜🟦🟦⬜\n");
     }
 
     #[test]
     fn test_packing_grid8_add() {
         assert_eq!(
-            PackingGrid8::new().add(BitGrid8(0x1818000000)),
-            PackingGrid8::from_vec(vec![BitGrid8(0x1818000000)])
+            PackingGrid8::new().add(BitGrid8x8(0x1818000000)),
+            PackingGrid8::from_vec(vec![BitGrid8x8(0x1818000000)])
         );
         assert_eq!(
-            PackingGrid8::from_vec(vec![BitGrid8(0x1818000000), BitGrid8(0x20306)])
+            PackingGrid8::from_vec(vec![BitGrid8x8(0x1818000000), BitGrid8x8(0x20306)])
                 .unwrap()
-                .add(BitGrid8(0x203060)),
+                .add(BitGrid8x8(0x203060)),
             PackingGrid8::from_vec(vec![
-                BitGrid8(0x1818000000),
-                BitGrid8(0x20306),
-                BitGrid8(0x203060)
+                BitGrid8x8(0x1818000000),
+                BitGrid8x8(0x20306),
+                BitGrid8x8(0x203060)
             ])
         );
     }
@@ -454,7 +454,7 @@ mod test {
         // Placements avoid central 4x4 square
         assert_eq!(
             PackBitGrid8::piece_placement(
-                BitGrid8(0x3c3c3c3c0000),
+                BitGrid8x8(0x3c3c3c3c0000),
                 D4CanonicalGrid8::new(pentomino[&'F'])
             )
             .len(),
@@ -462,7 +462,7 @@ mod test {
         );
         assert_eq!(
             PackBitGrid8::piece_placement(
-                BitGrid8(0x3c3c3c3c0000),
+                BitGrid8x8(0x3c3c3c3c0000),
                 D4CanonicalGrid8::new(pentomino[&'L'])
             )
             .len(),
@@ -470,7 +470,7 @@ mod test {
         );
         assert_eq!(
             PackBitGrid8::piece_placement(
-                BitGrid8(0x3c3c3c3c0000),
+                BitGrid8x8(0x3c3c3c3c0000),
                 D4CanonicalGrid8::new(pentomino[&'I'])
             )
             .len(),
@@ -478,7 +478,7 @@ mod test {
         );
         assert_eq!(
             PackBitGrid8::piece_placement(
-                BitGrid8(0x3c3c3c3c0000),
+                BitGrid8x8(0x3c3c3c3c0000),
                 D4CanonicalGrid8::new(pentomino[&'P'])
             )
             .len(),
@@ -486,7 +486,7 @@ mod test {
         );
         assert_eq!(
             PackBitGrid8::piece_placement(
-                BitGrid8(0x3c3c3c3c0000),
+                BitGrid8x8(0x3c3c3c3c0000),
                 D4CanonicalGrid8::new(pentomino[&'N'])
             )
             .len(),
@@ -494,7 +494,7 @@ mod test {
         );
         assert_eq!(
             PackBitGrid8::piece_placement(
-                BitGrid8(0x3c3c3c3c0000),
+                BitGrid8x8(0x3c3c3c3c0000),
                 D4CanonicalGrid8::new(pentomino[&'T'])
             )
             .len(),
@@ -502,7 +502,7 @@ mod test {
         );
         assert_eq!(
             PackBitGrid8::piece_placement(
-                BitGrid8(0x3c3c3c3c0000),
+                BitGrid8x8(0x3c3c3c3c0000),
                 D4CanonicalGrid8::new(pentomino[&'U'])
             )
             .len(),
@@ -510,7 +510,7 @@ mod test {
         );
         assert_eq!(
             PackBitGrid8::piece_placement(
-                BitGrid8(0x3c3c3c3c0000),
+                BitGrid8x8(0x3c3c3c3c0000),
                 D4CanonicalGrid8::new(pentomino[&'V'])
             )
             .len(),
@@ -518,7 +518,7 @@ mod test {
         );
         assert_eq!(
             PackBitGrid8::piece_placement(
-                BitGrid8(0x3c3c3c3c0000),
+                BitGrid8x8(0x3c3c3c3c0000),
                 D4CanonicalGrid8::new(pentomino[&'W'])
             )
             .len(),
@@ -526,7 +526,7 @@ mod test {
         );
         assert_eq!(
             PackBitGrid8::piece_placement(
-                BitGrid8(0x3c3c3c3c0000),
+                BitGrid8x8(0x3c3c3c3c0000),
                 D4CanonicalGrid8::new(pentomino[&'X'])
             )
             .len(),
@@ -534,7 +534,7 @@ mod test {
         );
         assert_eq!(
             PackBitGrid8::piece_placement(
-                BitGrid8(0x3c3c3c3c0000),
+                BitGrid8x8(0x3c3c3c3c0000),
                 D4CanonicalGrid8::new(pentomino[&'Y'])
             )
             .len(),
@@ -542,7 +542,7 @@ mod test {
         );
         assert_eq!(
             PackBitGrid8::piece_placement(
-                BitGrid8(0x3c3c3c3c0000),
+                BitGrid8x8(0x3c3c3c3c0000),
                 D4CanonicalGrid8::new(pentomino[&'Z'])
             )
             .len(),
@@ -553,7 +553,7 @@ mod test {
     #[test]
     fn test_pack_bitgrid8_domino_covers() {
         // Placements avoid central 4x4 square
-        let frame = BitGrid8(0x3c3c3c3c0000);
+        let frame = BitGrid8x8(0x3c3c3c3c0000);
         let putative_pieces = PackBitGrid8::putative_pieces(
             frame,
             &OriginBitGrid8::pentomino_map()
@@ -562,37 +562,37 @@ mod test {
                 .collect::<Vec<_>>(),
         );
         let domino = PackBitGrid8::domino_covers(frame, &putative_pieces);
-        // for grid in &domino[&BitGrid8(0x1800)] {
+        // for grid in &domino[&BitGrid8x8(0x1800)] {
         // println!("{:}", grid);
         // }
         // Horizontal 2x1 domino
-        assert_eq!(domino[&BitGrid8(0x3)].len(), 20);
-        assert_eq!(domino[&BitGrid8(0x6)].len(), 30);
-        assert_eq!(domino[&BitGrid8(0xc)].len(), 31);
-        assert_eq!(domino[&BitGrid8(0x18)].len(), 30);
-        assert_eq!(domino[&BitGrid8(0x30)].len(), 31);
-        assert_eq!(domino[&BitGrid8(0x60)].len(), 30);
-        assert_eq!(domino[&BitGrid8(0xc0)].len(), 20);
-        assert_eq!(domino[&BitGrid8(0x300)].len(), 38);
-        assert_eq!(domino[&BitGrid8(0x600)].len(), 50);
-        assert_eq!(domino[&BitGrid8(0xc00)].len(), 37);
-        assert_eq!(domino[&BitGrid8(0x1800)].len(), 32);
-        assert_eq!(domino[&BitGrid8(0x3000)].len(), 37);
-        assert_eq!(domino[&BitGrid8(0x6000)].len(), 50);
-        assert_eq!(domino[&BitGrid8(0xc000)].len(), 38);
+        assert_eq!(domino[&BitGrid8x8(0x3)].len(), 20);
+        assert_eq!(domino[&BitGrid8x8(0x6)].len(), 30);
+        assert_eq!(domino[&BitGrid8x8(0xc)].len(), 31);
+        assert_eq!(domino[&BitGrid8x8(0x18)].len(), 30);
+        assert_eq!(domino[&BitGrid8x8(0x30)].len(), 31);
+        assert_eq!(domino[&BitGrid8x8(0x60)].len(), 30);
+        assert_eq!(domino[&BitGrid8x8(0xc0)].len(), 20);
+        assert_eq!(domino[&BitGrid8x8(0x300)].len(), 38);
+        assert_eq!(domino[&BitGrid8x8(0x600)].len(), 50);
+        assert_eq!(domino[&BitGrid8x8(0xc00)].len(), 37);
+        assert_eq!(domino[&BitGrid8x8(0x1800)].len(), 32);
+        assert_eq!(domino[&BitGrid8x8(0x3000)].len(), 37);
+        assert_eq!(domino[&BitGrid8x8(0x6000)].len(), 50);
+        assert_eq!(domino[&BitGrid8x8(0xc000)].len(), 38);
 
         // Vertical 1x2 domino
-        assert_eq!(domino[&BitGrid8(0x101)].len(), 20);
-        assert_eq!(domino[&BitGrid8(0x10100)].len(), 30);
-        assert_eq!(domino[&BitGrid8(0x202)].len(), 38);
+        assert_eq!(domino[&BitGrid8x8(0x101)].len(), 20);
+        assert_eq!(domino[&BitGrid8x8(0x10100)].len(), 30);
+        assert_eq!(domino[&BitGrid8x8(0x202)].len(), 38);
     }
 
     /* TODO: return to this
     #[test]
     fn test_pack_bitgrid8_next_piece() {
         // Placements avoid central 4x4 square
-        let center4x4 = BitGrid8(0x3c3c3c3c0000);
-        let center2x2 = BitGrid8(0x1818000000);
+        let center4x4 = BitGrid8x8(0x3c3c3c3c0000);
+        let center2x2 = BitGrid8x8(0x1818000000);
         let start = PackBitGrid8::new(center2x2, OriginBitGrid8::pentomino_map().into_values().collect::<Vec<_>>());
         let next_piece = start.next_piece();
         assert_eq!(next_piece, OriginBitGrid8::new(0x20702));
@@ -606,7 +606,7 @@ mod test {
 
     // #[test]
     // fn test_pack_bitgrid8_add_piece() {
-    // let center2x2 = BitGrid8(0x1818000000);
+    // let center2x2 = BitGrid8x8(0x1818000000);
     // let state0 = PackBitGrid8::new(center2x2, OriginBitGrid8::pentomino_map().into_values().collect::<Vec<_>>());
     // assert_eq!(state0.piece_counts.len(), 12);
     // let next_piece = state0.next_piece();

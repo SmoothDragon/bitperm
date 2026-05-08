@@ -1,13 +1,13 @@
 use arrayvec::*;
 
-use crate::bitgrid8::BitGrid8;
+use crate::bitgrid_8x8::BitGrid8x8;
 
 // use itertools::Itertools;
 
 // -----------------------------------------------------------------
 // 8x8x8 cube space represented by [u64; 8]
 // -----------------------------------------------------------------
-// Position at (x,y,z) BitGrid8[z] = x + 8*y
+// Position at (x,y,z) BitGrid8x8[z] = x + 8*y
 // Rotations will happen from the center of the cube
 //
 // The operators >> and << implement unbounded_shr() and unbounded_shl(),
@@ -23,13 +23,13 @@ use crate::bitgrid8::BitGrid8;
     Ord,
     // BitAnd, BitAndAssign, BitOr, BitOrAssign, BitXor, BitXorAssign,
 )]
-pub struct BitCube8([BitGrid8; 8]);
+pub struct BitCube8([BitGrid8x8; 8]);
 
 pub struct BitCube4Rotations(pub ArrayVec<BitCube8, 24>);
 
 impl From<[u64; 8]> for BitCube8 {
     fn from(arr: [u64; 8]) -> BitCube8 {
-        BitCube8(arr.map(BitGrid8::from))
+        BitCube8(arr.map(BitGrid8x8::from))
     }
 }
 

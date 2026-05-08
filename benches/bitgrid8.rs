@@ -1,7 +1,7 @@
 use criterion::*;
 use std::time::Duration;
 
-use ::bitperm::bitgrid8::BitGrid8;
+use ::bitperm::bitgrid_8x8::BitGrid8x8;
 
 criterion_group! {
     name = benches;
@@ -14,18 +14,18 @@ pub fn bitgrid8(c: &mut Criterion) {
     // Global set up here
 
     c.bench_function("origin_dihedral_all", |b| {
-        let piece = BitGrid8::from(0x13);
+        let piece = BitGrid8x8::from(0x13);
 
         b.iter(|| {
-            BitGrid8::origin_dihedral_all(piece);
+            BitGrid8x8::origin_dihedral_all(piece);
         })
     });
 
     c.bench_function("origin_dihedral_all_vec", |b| {
-        let piece = BitGrid8::from(0x13);
+        let piece = BitGrid8x8::from(0x13);
 
         b.iter(|| {
-            BitGrid8::origin_dihedral_all_vec(piece);
+            BitGrid8x8::origin_dihedral_all_vec(piece);
         })
     });
 }

@@ -15,7 +15,7 @@ use core::ops::{
 /// return-position `impl Trait` in traits, which is newer and still awkward for
 /// multiple methods).
 ///
-/// Supertraits match [`crate::bitgrid8::BitGrid8`]'s derives so generic code can
+/// Supertraits match [`crate::bitgrid_8x8::BitGrid8x8`]'s derives so generic code can
 /// rely on the same comparisons, hashing, ordering, and bitwise grid algebra.
 pub trait BitGrid:
     Copy
@@ -33,11 +33,11 @@ pub trait BitGrid:
     + BitXorAssign
 {
     /// Yields each **set** cell as a grid value containing exactly one bit
-    /// (same convention as `BitGrid8::into_iter()`).
+    /// (same convention as `BitGrid8x8::into_iter()`).
     type BitsIter: Iterator<Item = Self>;
 
     /// Yields `(x, y)` coordinates of each **set** cell, with origin at the
-    /// lower-left (same indexing as `BitGrid8`: bit index `x + 8 * y`).
+    /// lower-left (same indexing as `BitGrid8x8`: bit index `x + 8 * y`).
     type CoordsIter: Iterator<Item = (usize, usize)>;
 
     fn mirror_x(&self) -> Self;

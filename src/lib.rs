@@ -20,7 +20,7 @@ pub mod bittroc4;
 pub use bittroc4::BitTroc4;
 pub mod bittroc4_full;
 
-pub mod bitgrid8;
+pub mod bitgrid_8x8;
 pub mod pack_bitgrid8;
 pub mod piece_bitgrid8;
 
