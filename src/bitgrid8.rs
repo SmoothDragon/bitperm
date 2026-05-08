@@ -6,6 +6,7 @@ use derive_more::*;
 
 use crate::bitlib::swap_mask_shift_u64;
 use crate::bitlib::*;
+use crate::traits::BitGrid;
 
 // -----------------------------------------------------------------
 // 2D geometric operations on an 8x8 grid
@@ -43,13 +44,13 @@ use crate::bitlib::*;
 )]
 pub struct BitGrid8(pub u64);
 
-/// Let BitGrid8 use >> operator safely with i32 like Julia
-impl core::ops::Shr<i32> for BitGrid8 {
+/// Let BitGrid8 use >> operator safely with isize like Julia
+impl core::ops::Shr<isize> for BitGrid8 {
     type Output = Self;
 
-    fn shr(self, shift: i32) -> Self {
+    fn shr(self, shift: isize) -> Self {
         let positive = shift >= 0;
-        let shift: u32 = shift.unsigned_abs();
+        let shift: u32 = shift.unsigned_abs() as u32;
         if positive {
             Self(self.0.unbounded_shr(shift))
         } else {
@@ -58,13 +59,13 @@ impl core::ops::Shr<i32> for BitGrid8 {
     }
 }
 
-/// Let BitGrid8 use << operator safely with i32 like Julia
-impl core::ops::Shl<i32> for BitGrid8 {
+/// Let BitGrid8 use << operator safely with isize like Julia
+impl core::ops::Shl<isize> for BitGrid8 {
     type Output = Self;
 
-    fn shl(self, shift: i32) -> Self {
+    fn shl(self, shift: isize) -> Self {
         let positive = shift >= 0;
-        let shift: u32 = shift.unsigned_abs();
+        let shift: u32 = shift.unsigned_abs() as u32;
         if positive {
             Self(self.0.unbounded_shl(shift))
         } else {
@@ -176,6 +177,113 @@ impl IntoIterator for &BitGrid8 {
 
     fn into_iter(self) -> Self::IntoIter {
         BitGrid8PointsIter { remaining: self.0 }
+    }
+}
+
+/// Iterator over `(x, y)` coordinates of set bits (lower-left origin).
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct BitGrid8PointCoordsIter {
+    remaining: u64,
+}
+
+impl Iterator for BitGrid8PointCoordsIter {
+    type Item = (usize, usize);
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.remaining == 0 {
+            return None;
+        }
+        let bit = self.remaining.isolate_lowest_one();
+        self.remaining ^= bit;
+        let idx = bit.trailing_zeros() as usize;
+        Some((idx % 8, idx / 8))
+    }
+}
+
+impl BitGrid for BitGrid8 {
+    type BitsIter = BitGrid8PointsIter;
+    type CoordsIter = BitGrid8PointCoordsIter;
+
+    fn mirror_x(&self) -> Self {
+        self.flip_x()
+    }
+
+    /// Mirror across the **vertical** midline: `x -> 7 - x` (per row).
+    fn mirror_y(&self) -> Self {
+        let mut out = 0_u64;
+        for y in 0..8 {
+            let row = ((self.0 >> (8 * y)) & 0xff) as u8;
+            let row = row.reverse_bits() as u64;
+            out |= row << (8 * y);
+        }
+        Self(out)
+    }
+
+    fn rotate_c4(&self, steps: isize) -> Self {
+        match steps.rem_euclid(4) {
+            0 => *self,
+            1 => self.rotate_cc(),
+            2 => self.rotate_cc().rotate_cc(),
+            3 => self.rotate(),
+            _ => unreachable!(),
+        }
+    }
+
+    fn shift_x(&self, shift: isize) -> Self {
+        BitGrid8::shift_x(*self, shift)
+    }
+
+    fn shift_y(&self, shift: isize) -> Self {
+        BitGrid8::shift_y(*self, shift)
+    }
+
+    fn cycle_x(&self, shift: isize) -> Self {
+        let shift = shift.rem_euclid(8) as u32;
+        if shift == 0 {
+            return *self;
+        }
+        let mut out = 0_u64;
+        for y in 0..8 {
+            let row = ((self.0 >> (8 * y)) & 0xff) as u8;
+            let rotated = row.rotate_left(shift);
+            out |= (rotated as u64) << (8 * y);
+        }
+        Self(out)
+    }
+
+    fn cycle_y(&self, shift: isize) -> Self {
+        let shift = shift.rem_euclid(8) as u32;
+        if shift == 0 {
+            return *self;
+        }
+        let mut out = 0_u64;
+        for x in 0..8 {
+            let mut col = 0_u8;
+            for y in 0..8 {
+                if (self.0 >> (x + 8 * y)) & 1 != 0 {
+                    col |= 1 << y;
+                }
+            }
+            let rotated = col.rotate_left(shift);
+            for y in 0..8 {
+                if (rotated >> y) & 1 != 0 {
+                    out |= 1_u64 << (x + 8 * y);
+                }
+            }
+        }
+        Self(out)
+    }
+
+    fn iterate_bits(&self) -> Self::BitsIter {
+        BitGrid8PointsIter {
+            remaining: self.0,
+        }
+    }
+
+    fn iterate_coords(&self) -> Self::CoordsIter {
+        BitGrid8PointCoordsIter {
+            remaining: self.0,
+        }
     }
 }
 
@@ -556,7 +664,7 @@ impl BitGrid8 {
     }
 
     /// Shifts off the side are lost.
-    pub fn shift_x(self, shift: i32) -> Self {
+    pub fn shift_x(self, shift: isize) -> Self {
         if !(-7..=7).contains(&shift) {
             return Self(0);
         };
@@ -564,7 +672,7 @@ impl BitGrid8 {
             return self;
         };
         let sign = shift > 0;
-        let shift: u32 = shift.unsigned_abs();
+        let shift: u32 = shift.unsigned_abs() as u32;
         let mask: u64 = ((1_u64 << (8_u32 - shift)) - 1_u64) * 0x0101_0101_0101_0101_u64;
         if sign {
             BitGrid8::from((mask & self.0).unbounded_shl(shift))
@@ -574,7 +682,7 @@ impl BitGrid8 {
     }
 
     /// Verifies that the x_shift does not cross the boundary edges
-    pub fn checked_shift_x(self, shift: i32) -> Option<Self> {
+    pub fn checked_shift_x(self, shift: isize) -> Option<Self> {
         let shifted = self.shift_x(shift);
         if self.0.count_ones() == shifted.0.count_ones() {
             Some(shifted)
@@ -584,7 +692,7 @@ impl BitGrid8 {
     }
 
     /// Shifts off the side are lost.
-    pub fn shift_y(self, shift: i32) -> Self {
+    pub fn shift_y(self, shift: isize) -> Self {
         if !(-7..=7).contains(&shift) {
             return Self(0);
         };
@@ -592,7 +700,7 @@ impl BitGrid8 {
             return self;
         };
         let sign = shift > 0;
-        let shift: u32 = shift.unsigned_abs().unbounded_shl(3); // Shift by multiples of 8
+        let shift: u32 = (shift.unsigned_abs() as u32).unbounded_shl(3); // Shift by multiples of 8
                                                                 // let mask: u64 = ((1_u64 << (8_u32-shift)) - 1_u64) * 0x0101_0101_0101_0101_u64;
         let mask: u64 = 0xffff_ffff_ffff_ffff_u64.unbounded_shr(shift);
         if sign {
@@ -603,7 +711,7 @@ impl BitGrid8 {
     }
 
     /// Verifies that the x_shift does not cross the boundary edges
-    pub fn checked_shift_y(self, shift: i32) -> Option<Self> {
+    pub fn checked_shift_y(self, shift: isize) -> Option<Self> {
         let shifted = self.shift_y(shift);
         if self.0.count_ones() == shifted.0.count_ones() {
             Some(shifted)
@@ -616,12 +724,12 @@ impl BitGrid8 {
     /// The low three bits of shift are the x-shift, and the high three the y-shift.
     /// Low six bits of shift = y2 y2 y0 x2 x1 x0
     /// Only
-    pub fn shift_xy(self, x_shift: i32, y_shift: i32) -> Self {
+    pub fn shift_xy(self, x_shift: isize, y_shift: isize) -> Self {
         self.shift_x(x_shift).shift_y(y_shift)
     }
 
     /// Verifies that the x_shift does not cross the boundary edges
-    pub fn checked_shift_xy(self, x_shift: i32, y_shift: i32) -> Option<Self> {
+    pub fn checked_shift_xy(self, x_shift: isize, y_shift: isize) -> Option<Self> {
         let shifted = self.shift_xy(x_shift, y_shift);
         if self.0.count_ones() == shifted.0.count_ones() {
             Some(shifted)

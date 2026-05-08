@@ -109,14 +109,14 @@ impl OriginBitGrid8 {
 
     pub fn rotate(self) -> Self {
         Self {
-            grid: self.grid.rotate() >> (((8 - self.xy.0) << 3) as i32),
+            grid: self.grid.rotate() >> (((8 - self.xy.0) << 3) as isize),
             xy: (self.xy.1, self.xy.0),
         }
     }
 
     pub fn rotate_cc(self) -> Self {
         Self {
-            grid: self.grid.rotate_cc() >> ((8 - self.xy.1) as i32),
+            grid: self.grid.rotate_cc() >> ((8 - self.xy.1) as isize),
             xy: (self.xy.1, self.xy.0),
         }
     }
@@ -124,7 +124,7 @@ impl OriginBitGrid8 {
     // Flip along x-axis. For 2D this is the same as mirror.
     pub fn flip_x(self) -> Self {
         Self {
-            grid: self.grid.flip_x() >> (((8 - self.xy.1) << 3) as i32),
+            grid: self.grid.flip_x() >> (((8 - self.xy.1) << 3) as isize),
             xy: self.xy,
         }
     }
@@ -147,7 +147,7 @@ impl OriginBitGrid8 {
 
         for jj in y_min..y_max {
             for ii in x_min..x_max {
-                let grid = self.grid.shift_xy(ii as i32, jj as i32);
+                let grid = self.grid.shift_xy(ii as isize, jj as isize);
                 // result.push(grid);
                 if grid.0.unbounded_shr(target) & 1 == 1 && grid & board == BitGrid8(0) {
                     result.push(grid);
