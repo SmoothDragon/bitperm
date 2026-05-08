@@ -122,14 +122,14 @@ impl fmt::Display for BitGrid8 {
             (0..8)
                 .rev()
                 .map(|y| (0..8)
-                    .map(|x| format!(
-                        "{}",
-                        if (self.0 >> (x + 8 * y)) & 0x1 == 1 {
+                    .map(|x| {
+                        (if (self.0 >> (x + 8 * y)) & 0x1 == 1 {
                             "🟥"
                         } else {
                             "⬜"
-                        }
-                    ))
+                        })
+                        .to_string()
+                    })
                     .collect::<String>()
                     + "\n")
                 .collect::<String>()
