@@ -1,5 +1,3 @@
-use crate::bitlib::*;
-
 // -----------------------------------------------------------------
 // Simple cubic lattice trait
 // -----------------------------------------------------------------
@@ -17,6 +15,7 @@ pub trait LatticeCuboidCubicSimple {
     // fn min_corner(&self) -> [usize; 3];
 }
 
+/*
 #[derive(Copy, Clone, PartialEq)]
 pub struct BC3(pub u32);
 
@@ -69,3 +68,4 @@ impl LatticeCuboidCubicSimple for BC3 {
         todo!()
     }
 }
+*/
