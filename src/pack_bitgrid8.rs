@@ -237,7 +237,7 @@ impl PackBitGrid8 {
             let (m, n) = putative.xy;
             for ii in 0..=(8 - m) {
                 for jj in 0..=(8 - n) {
-                    if let Some(shifted) = grid.checked_shift_xy(ii as i32, jj as i32) {
+                    if let Some(shifted) = grid.checked_shift_xy(ii as isize, jj as isize) {
                         if shifted.0 & frame.0 == 0 {
                             // println!("{}", shifted | frame);
                             good.push(shifted)
