@@ -51,8 +51,8 @@ impl PackingGrid8 {
             fill |= *piece;
         }
         Some(Self {
-            fill: fill,
-            pieces: pieces,
+            fill,
+            pieces,
         })
     }
 
@@ -154,10 +154,10 @@ impl PackBitGrid8 {
         Self {
             packing: PackingGrid8::from_vec(vec![frame])
                 .expect("Adding a single piece shouldn't conflict."),
-            piece_counts: piece_counts,
-            putative_pieces: putative_pieces,
+            piece_counts,
+            putative_pieces,
             putative_corners: frame.find_corners(),
-            entropy: entropy,
+            entropy,
         }
     }
 
@@ -190,10 +190,10 @@ impl PackBitGrid8 {
 
             Some(Self {
                 putative_corners: packing.fill.find_corners(),
-                packing: packing,
-                piece_counts: piece_counts,
-                putative_pieces: putative_pieces,
-                entropy: entropy,
+                packing,
+                piece_counts,
+                putative_pieces,
+                entropy,
             })
         } else {
             return None;

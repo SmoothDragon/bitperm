@@ -102,7 +102,7 @@ impl OriginBitGrid8 {
     pub fn new(raw_u64: u64) -> Self {
         let grid = BitGrid8(raw_u64).shift_to_origin();
         Self {
-            grid: grid,
+            grid,
             xy: grid.bounding_box(),
         }
     }
@@ -111,7 +111,6 @@ impl OriginBitGrid8 {
         Self {
             grid: self.grid.rotate() >> (((8 - self.xy.0) << 3) as i32),
             xy: (self.xy.1, self.xy.0),
-            ..self
         }
     }
 
@@ -119,7 +118,6 @@ impl OriginBitGrid8 {
         Self {
             grid: self.grid.rotate_cc() >> ((8 - self.xy.1) as i32),
             xy: (self.xy.1, self.xy.0),
-            ..self
         }
     }
 
@@ -127,7 +125,7 @@ impl OriginBitGrid8 {
     pub fn flip_x(self) -> Self {
         Self {
             grid: self.grid.flip_x() >> (((8 - self.xy.1) << 3) as i32),
-            ..self
+            xy: self.xy,
         }
     }
 
@@ -157,7 +155,7 @@ impl OriginBitGrid8 {
                 }
             }
         }
-        if result.len() == 0 {
+        if result.is_empty() {
             None
         } else {
             Some(result)
