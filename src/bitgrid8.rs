@@ -123,6 +123,42 @@ impl From<u64> for BitGrid8 {
     }
 }
 
+#[derive(Copy, Clone, Debug, Eq, PartialEq)]
+pub struct BitGrid8PointsIter {
+    remaining: u64,
+}
+
+impl Iterator for BitGrid8PointsIter {
+    type Item = BitGrid8;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        if self.remaining == 0 {
+            return None;
+        }
+        let bit = self.remaining.isolate_lowest_one();
+        self.remaining ^= bit;
+        Some(BitGrid8(bit))
+    }
+}
+
+impl IntoIterator for BitGrid8 {
+    type Item = BitGrid8;
+    type IntoIter = BitGrid8PointsIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        BitGrid8PointsIter { remaining: self.0 }
+    }
+}
+
+impl IntoIterator for &BitGrid8 {
+    type Item = BitGrid8;
+    type IntoIter = BitGrid8PointsIter;
+
+    fn into_iter(self) -> Self::IntoIter {
+        BitGrid8PointsIter { remaining: self.0 }
+    }
+}
+
 // Beware using automatic deref
 // impl core::ops::Deref for BitGrid8 {
     // type Target = u64;

@@ -1,7 +1,7 @@
 use criterion::*;
 use std::time::Duration;
 
-use bitperm::*;
+use ::bitperm::bitlib::{swap_mask_shift_u32, swap_mask_shift_u64};
 
 criterion_group! {
     name = benches;

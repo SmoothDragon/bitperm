@@ -1,7 +1,7 @@
 use criterion::*;
 use std::time::Duration;
 
-use bitperm::*;
+use ::bitperm::bitgrid8::BitGrid8;
 
 criterion_group! {
     name = benches;
