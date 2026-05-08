@@ -28,6 +28,4 @@ pub fn bitgrid8(c: &mut Criterion) {
             BitGrid8::origin_dihedral_all_vec(piece);
         })
     });
-
 }
-
