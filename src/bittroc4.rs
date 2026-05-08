@@ -6,7 +6,6 @@ use std::ops::*;
 use crate::bitcube3::BitCube3;
 use crate::bitcube4::BitCube4;
 
-
 // -----------------------------------------------------------------
 // 4x4x4 truncated octahedron space with a 3x3x3 space in between
 // -----------------------------------------------------------------
@@ -19,51 +18,70 @@ pub struct BitTroc4 {
     pub c3: BitCube3,
 }
 
-
 impl BitTroc4 {
-    pub fn rotate_x(self) -> Self { 
-        Self{c4: self.c4.rotate_x(), c3: self.c3.rotate_x()}
+    pub fn rotate_x(self) -> Self {
+        Self {
+            c4: self.c4.rotate_x(),
+            c3: self.c3.rotate_x(),
+        }
     }
 
-    pub fn rotate_y(self) -> Self { 
-        Self{c4: self.c4.rotate_y(), c3: self.c3.rotate_y()}
+    pub fn rotate_y(self) -> Self {
+        Self {
+            c4: self.c4.rotate_y(),
+            c3: self.c3.rotate_y(),
+        }
     }
 
-    pub fn rotate_z(self) -> Self { 
-        Self{c4: self.c4.rotate_z(), c3: self.c3.rotate_z()}
+    pub fn rotate_z(self) -> Self {
+        Self {
+            c4: self.c4.rotate_z(),
+            c3: self.c3.rotate_z(),
+        }
     }
 
-    pub fn rotate_d(self) -> Self { 
-        Self{c4: self.c4.rotate_d(), c3: self.c3.rotate_d()}
+    pub fn rotate_d(self) -> Self {
+        Self {
+            c4: self.c4.rotate_d(),
+            c3: self.c3.rotate_d(),
+        }
     }
 
-    pub fn shift_x(self, shift: i8) -> Self { 
-        Self{c4: self.c4.shift_x(shift), c3: self.c3.shift_x(shift)}
+    pub fn shift_x(self, shift: i8) -> Self {
+        Self {
+            c4: self.c4.shift_x(shift),
+            c3: self.c3.shift_x(shift),
+        }
     }
 
-    pub fn shift_y(self, shift: i8) -> Self { 
-        Self{c4: self.c4.shift_y(shift), c3: self.c3.shift_y(shift)}
+    pub fn shift_y(self, shift: i8) -> Self {
+        Self {
+            c4: self.c4.shift_y(shift),
+            c3: self.c3.shift_y(shift),
+        }
     }
 
-    pub fn shift_z(self, shift: i8) -> Self { 
-        Self{c4: self.c4.shift_z(shift), c3: self.c3.shift_z(shift)}
+    pub fn shift_z(self, shift: i8) -> Self {
+        Self {
+            c4: self.c4.shift_z(shift),
+            c3: self.c3.shift_z(shift),
+        }
     }
-
 
     /// Given a piece in the 4-cube, shift it towards the origin so that it touches the x, y, and z
     /// planes
     // pub fn shift_to_origin(self) -> Self {
-        // let mut shape = self.0;
-        // let z_shift = (shape.trailing_zeros() / 16) * 16;
-        // shape = shape.unbounded_shr(z_shift);
-        // let xy_proj = shape | shape.unbounded_shr(32);
-        // let xy_proj = xy_proj | xy_proj.unbounded_shr(16);
-        // let y_shift = (xy_proj.trailing_zeros() / 4) * 4;
-        // shape = shape.unbounded_shr(y_shift);
-        // let x_shift = xy_proj | xy_proj.unbounded_shr(8);
-        // let x_shift = x_shift | x_shift.unbounded_shr(4);
-        // shape = shape.unbounded_shr(x_shift.trailing_zeros());
-        // Self(shape)
+    // let mut shape = self.0;
+    // let z_shift = (shape.trailing_zeros() / 16) * 16;
+    // shape = shape.unbounded_shr(z_shift);
+    // let xy_proj = shape | shape.unbounded_shr(32);
+    // let xy_proj = xy_proj | xy_proj.unbounded_shr(16);
+    // let y_shift = (xy_proj.trailing_zeros() / 4) * 4;
+    // shape = shape.unbounded_shr(y_shift);
+    // let x_shift = xy_proj | xy_proj.unbounded_shr(8);
+    // let x_shift = x_shift | x_shift.unbounded_shr(4);
+    // shape = shape.unbounded_shr(x_shift.trailing_zeros());
+    // Self(shape)
     // }
 
     pub fn overlap(self, other: Self) -> bool {
@@ -71,12 +89,14 @@ impl BitTroc4 {
     }
 }
 
-
 impl BitOr for BitTroc4 {
     type Output = Self;
 
     fn bitor(self, other: Self) -> Self::Output {
-        Self{ c4: self.c4 | other.c4, c3: self.c3 | other.c3 }
+        Self {
+            c4: self.c4 | other.c4,
+            c3: self.c3 | other.c3,
+        }
     }
 }
 
@@ -84,29 +104,38 @@ impl BitAnd for BitTroc4 {
     type Output = Self;
 
     fn bitand(self, other: Self) -> Self::Output {
-        Self{ c4: self.c4 & other.c4, c3: self.c3 & other.c3 }
+        Self {
+            c4: self.c4 & other.c4,
+            c3: self.c3 & other.c3,
+        }
     }
 }
 
 // impl fmt::Debug for BitTroc4 {
-    // fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        // write!(f, "{}\n{}", self.c4, self.c3)
-    // } 
-// } 
+// fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+// write!(f, "{}\n{}", self.c4, self.c3)
+// }
+// }
 
 impl fmt::Display for BitTroc4 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "{:}\n{:}", self.c4, self.c3)
     }
-} 
+}
 
 #[cfg(test)]
 mod test {
     use super::*;
 
     // const FULL: BitCube4 = BitCube4(0xffff_ffff_ffff_ffff_u64);
-    const FULL: BitTroc4 = BitTroc4{c4:BitCube4(0xffff_ffff_ffff_ffff_u64), c3:BitCube3(0o777_777_777)};
-    const ORDER: BitTroc4 = BitTroc4{c4:BitCube4(0xfedc_ba98_7654_3210_u64), c3:BitCube3(0o76543210)};
+    const FULL: BitTroc4 = BitTroc4 {
+        c4: BitCube4(0xffff_ffff_ffff_ffff_u64),
+        c3: BitCube3(0o777_777_777),
+    };
+    const ORDER: BitTroc4 = BitTroc4 {
+        c4: BitCube4(0xfedc_ba98_7654_3210_u64),
+        c3: BitCube3(0o76543210),
+    };
     // const UPPER_RIGHT_2X4X2: BitCube4 = BitCube4(0xcccc_cccc_0000_0000_u64);
     // const LOWER_RIGHT_2X4X2: BitCube4 = BitCube4(0x0000_0000_cccc_cccc_u64);
     // const LOWER_LEFT_2X4X2: BitCube4 = BitCube4(0x0000_0000_3333_3333_u64);
@@ -135,7 +164,6 @@ mod test {
         assert_eq!(format!("{:}", ORDER),
             "1100 1110 1101 1111\n0100 0110 0101 0111\n1000 1010 1001 1011\n0000 0010 0001 0011\n010 101 000\n100 001 111\n000 110 011"
         );
-
     }
 
     #[test]
@@ -146,22 +174,26 @@ mod test {
 
     #[test]
     fn test_shift_x() {
-        assert_eq!(FULL.shift_x(1), 
-                   BitTroc4{c4:BitCube4(0xeeee_eeee_eeee_eeee_u64), c3:BitCube3(0o666_666_666)}
-                   );
+        assert_eq!(
+            FULL.shift_x(1),
+            BitTroc4 {
+                c4: BitCube4(0xeeee_eeee_eeee_eeee_u64),
+                c3: BitCube3(0o666_666_666)
+            }
+        );
     }
 
     /*
     #[test]
     fn test_shift_y() {
-        assert_eq!(FULL.shift_y(1), 
+        assert_eq!(FULL.shift_y(1),
                    BitCube4(0xfff0_fff0_fff0_fff0_u64)
                    );
     }
 
     #[test]
     fn test_shift_z() {
-        assert_eq!(FULL.shift_z(1), 
+        assert_eq!(FULL.shift_z(1),
                    BitCube4(0xffff_ffff_ffff_0000_u64)
                    );
     }

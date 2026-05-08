@@ -356,10 +356,10 @@ impl fmt::Display for BitCube8 {
 */
 #[cfg(test)]
 mod test {
-    // Tests for this module are currently commented out.
-    // Keeping imports here would trip `unused_imports` under `clippy -D warnings`.
-
     /*
+    use super::*;
+    use crate::bitlib::*;
+
         #[test]
         fn test_debug() {
             assert_eq!(format!("{:?}", BitCube8::from(ORDER)),

@@ -2,10 +2,9 @@
 #![feature(isolate_most_least_significant_one)]
 
 #[allow(dead_code)]
-fn print_type<T: std::fmt::Display>(x: &T) { 
+fn print_type<T: std::fmt::Display>(x: &T) {
     println!("{} {:?}", x, std::any::type_name::<T>());
 }
-
 
 pub mod bitlib;
 pub mod bitperm;
@@ -22,8 +21,8 @@ pub use bittroc4::BitTroc4;
 pub mod bittroc4_full;
 
 pub mod bitgrid8;
-pub mod piece_bitgrid8;
 pub mod pack_bitgrid8;
+pub mod piece_bitgrid8;
 
 pub mod bitmatrix8;
 
@@ -40,4 +39,3 @@ pub use bitcube4::BitCube4;
 
 // mod bitpara8;
 // pub use crate::bitpara8::*;
-

@@ -21,9 +21,9 @@ impl From<BitCube4> for BitCube3 {
     fn from(bc4: BitCube4) -> BitCube3 {
         let mut x = bc4.0;
         // Shift the row start index from 0,4,8 to 0,3,6
-        x = (x & 0x700070007) ^ ((x>>1) & 0x3800380038) ^ ((x>>2) & 0x01c001c001c0);
+        x = (x & 0x700070007) ^ ((x >> 1) & 0x3800380038) ^ ((x >> 2) & 0x01c001c001c0);
         // Shift the plane start index from 0,16,32 to 0,9,18
-        x = (x & 0o777) ^ ((x>>7) & 0o777000) ^ ((x>>14) & 0o777000000);
+        x = (x & 0o777) ^ ((x >> 7) & 0o777000) ^ ((x >> 14) & 0o777000000);
         BitCube3(x as u32)
     }
 }

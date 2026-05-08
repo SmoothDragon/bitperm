@@ -1,5 +1,5 @@
-use std::hint::black_box;
 use criterion::{criterion_group, criterion_main, Criterion};
+use std::hint::black_box;
 
 fn popcnt_simple(n: u64) -> u64 {
     let mut count = 0;
@@ -14,8 +14,12 @@ fn popcnt_intrinsic(n: u64) -> u32 {
 }
 
 fn criterion_benchmark(c: &mut Criterion) {
-    c.bench_function("popcnt simple", |b| b.iter(|| popcnt_simple(black_box(200))));
-    c.bench_function("popcnt intrinsic", |b| b.iter(|| popcnt_intrinsic(black_box(200))));
+    c.bench_function("popcnt simple", |b| {
+        b.iter(|| popcnt_simple(black_box(200)))
+    });
+    c.bench_function("popcnt intrinsic", |b| {
+        b.iter(|| popcnt_intrinsic(black_box(200)))
+    });
 }
 
 criterion_group!(benches, criterion_benchmark);

@@ -6,21 +6,21 @@
 
 #[inline]
 pub fn swap_mask_shift_u32(y: &mut u32, mask: u32, shift: u32) {
-   *y ^= (*y).unbounded_shr(shift) & mask;
-   *y ^= (*y & mask).unbounded_shl(shift);
-   *y ^= (*y).unbounded_shr(shift) & mask;
+    *y ^= (*y).unbounded_shr(shift) & mask;
+    *y ^= (*y & mask).unbounded_shl(shift);
+    *y ^= (*y).unbounded_shr(shift) & mask;
 }
 
 #[inline]
 pub fn swap_mask_shift_u64(y: &mut u64, mask: u64, shift: u32) {
-   *y ^= (*y).unbounded_shr(shift) & mask;
-   *y ^= (*y & mask).unbounded_shl(shift);
-   *y ^= (*y).unbounded_shr(shift) & mask;
+    *y ^= (*y).unbounded_shr(shift) & mask;
+    *y ^= (*y & mask).unbounded_shl(shift);
+    *y ^= (*y).unbounded_shr(shift) & mask;
 }
 
 pub fn sms64(mask: u64, shift: u32) -> Option<impl Fn(&mut u64) -> ()> {
     if mask.unbounded_shl(shift) & mask == 0 {
-        Some(move |y: &mut u64| { swap_mask_shift_u64(y, mask, shift) })
+        Some(move |y: &mut u64| swap_mask_shift_u64(y, mask, shift))
     } else {
         None
     }
@@ -71,11 +71,11 @@ pub const UPPER_RIGHT: u64 = 0xf0f0_f0f0_0000_0000_u64;
 pub const HIGHFIVE: u64 = 0xff80ff01ff;
 pub const SMALL_FIVE: u64 = 0x00f080f010f;
 pub const CHECKER2: u64 = 0x0c0c_0303;
-pub const SLASH:u64 = 0x8040201008040201;
-pub const BACKSLASH:u64 = 0x0102040810204080;
-pub const BORDER:u64 = 0xff81_8181_8181_81ff;
-pub const IDENTITY:u64 = 0x8040201008040201;
-pub const ANTIDIAG:u64 = 0x0102040810204080;
+pub const SLASH: u64 = 0x8040201008040201;
+pub const BACKSLASH: u64 = 0x0102040810204080;
+pub const BORDER: u64 = 0xff81_8181_8181_81ff;
+pub const IDENTITY: u64 = 0x8040201008040201;
+pub const ANTIDIAG: u64 = 0x0102040810204080;
 
 pub const BM8_UPPER_LEFT: u64 = 0x0f0f_0f0f_u64;
 pub const BM8_UPPER_RIGHT: u64 = 0xf0f0_f0f0_u64;
@@ -91,13 +91,12 @@ pub const BC3_CENTER_Y: u32 = 0o000_222_000_u32;
 pub const BC3_CENTER_Z: u32 = 0o020_020_020_u32;
 pub const BC3_CENTER_ALL: u32 = BC3_CENTER_X | BC3_CENTER_Y | BC3_CENTER_Z;
 
-
 #[cfg(test)]
 mod test {
     use super::*;
 
     #[test]
-    fn test_sms64(){
+    fn test_sms64() {
         let mut y: u64 = 0xffff_ffff_u64;
         // Swap 4x4 squares top <-> bottom
         swap_mask_shift_u64(&mut y, 0xffff_ffff_u64, 32);
@@ -109,4 +108,3 @@ mod test {
         assert_eq!(y, 0xffff_ffff_u64);
     }
 }
-

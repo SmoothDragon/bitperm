@@ -20,7 +20,6 @@ use crate::bitcube4::BitCube4;
 #[derive(Copy, Clone, PartialEq)]
 pub struct BitCube3(pub u32);
 
-
 impl From<u32> for BitCube3 {
     fn from(x: u32) -> BitCube3 {
         BitCube3(x & BC3_FULL)
@@ -41,8 +40,6 @@ impl From<BitCube4> for BitCube3 {
     }
 }
 */
-
-
 
 /* TODO: How should TryFrom<BitCube4> for BitCube3 work?
 impl TryFrom<u64> for BitCube3 {
@@ -68,7 +65,7 @@ impl Into<D3> for BitCube3 {
         let block = D3::cube(1.0);
         (0..27)
             .filter(|ii| (self.0 >> ii) & 1 == 1)
-            .map(|ii| v3(ii % 3, (ii/3) % 3, ii / 9))
+            .map(|ii| v3(ii % 3, (ii / 3) % 3, ii / 9))
             .map(|xyz| block.clone().translate(xyz))
             .union()
             // .translate(v3(-1,-1,-1))
@@ -77,22 +74,19 @@ impl Into<D3> for BitCube3 {
     }
 }
 
-
-
 /// 3x3x3 layout of u32 0b00000qponmlkjihgfedcba9876543210
 /// 678 | fgh | opq
 /// 345 | cde | lmn
 /// 012 | 9ab | ijk
 /// (x,y,z) at x+3*y+9*z
 impl BitCube3 {
-
     /// Count the number of cubes (ones) in the BitCube
     pub fn count_cubes(self) -> u32 {
         self.0.count_ones()
     }
 
     /// Easiest to visualize as a z-rotation, but same idea
-    pub fn rotate_x(self) -> Self { 
+    pub fn rotate_x(self) -> Self {
         let mut cube = self.0;
         // Swap vertical
         swap_mask_shift_u32(&mut cube, 0o777_u32, 18);
@@ -104,7 +98,7 @@ impl BitCube3 {
     }
 
     /// Easiest to visualize as a z-rotation, but same idea
-    pub fn rotate_y(self) -> Self { 
+    pub fn rotate_y(self) -> Self {
         let mut cube = self.0;
         // Swap vertical
         swap_mask_shift_u32(&mut cube, 0o777_u32, 18);
@@ -119,7 +113,7 @@ impl BitCube3 {
     /// abc      bc.
     /// ... then a.c
     /// abc      .ab
-    pub fn rotate_z(self) -> Self { 
+    pub fn rotate_z(self) -> Self {
         let mut cube = self.0;
         // Swap vertical
         swap_mask_shift_u32(&mut cube, 0o007_007_007_u32, 6);
@@ -132,23 +126,23 @@ impl BitCube3 {
 
     /// Rotate 120 degrees about the diagonal through the origin and center of the cube.
     /// TODO: Figure out a faster way than using BitCube4
-    pub fn rotate_d(self) -> Self { 
+    pub fn rotate_d(self) -> Self {
         Self::from(BitCube4::from(self).rotate_d())
     }
 
-    pub fn shift_x(self, shift: i8) -> Self { 
+    pub fn shift_x(self, shift: i8) -> Self {
         match shift {
             0 => self,
             1 => Self((self.0.unbounded_shl(1)) & 0o666_666_666_u32),
             2 => Self((self.0.unbounded_shl(2)) & 0o444_444_444_u32),
             -1 => Self((self.0.unbounded_shl(1)) & 0o333_333_333_u32),
             -2 => Self((self.0.unbounded_shl(2)) & 0o111_111_111_u32),
-            _ => Self(0)
+            _ => Self(0),
         }
     }
 
     /// Return none if the x-shift would move part of the polycube past an edge.
-    pub fn bounded_shift_x(self, shift: i8) -> Option<Self> { 
+    pub fn bounded_shift_x(self, shift: i8) -> Option<Self> {
         let shifted = self.shift_x(shift);
         if self.count_cubes() == shifted.count_cubes() {
             Some(shifted)
@@ -157,19 +151,19 @@ impl BitCube3 {
         }
     }
 
-    pub fn shift_y(self, shift: i8) -> Self { 
+    pub fn shift_y(self, shift: i8) -> Self {
         match shift {
             0 => self,
             1 => Self((self.0.unbounded_shl(3)) & 0o770_770_770_u32),
             2 => Self((self.0.unbounded_shl(6)) & 0o700_700_700_u32),
             -1 => Self((self.0.unbounded_shr(3)) & 0o077_077_077_u32),
             -2 => Self((self.0.unbounded_shr(6)) & 0o007_007_007_u32),
-            _ => Self(0)
+            _ => Self(0),
         }
     }
 
     /// Return none if the y-shift would move part of the polycube past an edge.
-    pub fn bounded_shift_y(self, shift: i8) -> Option<Self> { 
+    pub fn bounded_shift_y(self, shift: i8) -> Option<Self> {
         let shifted = self.shift_y(shift);
         if self.count_cubes() == shifted.count_cubes() {
             Some(shifted)
@@ -178,19 +172,19 @@ impl BitCube3 {
         }
     }
 
-    pub fn shift_z(self, shift: i8) -> Self { 
+    pub fn shift_z(self, shift: i8) -> Self {
         match shift {
             0 => self,
             1 => Self((self.0.unbounded_shl(9)) & 0o777_777_000_u32),
             2 => Self((self.0.unbounded_shl(18)) & 0o777_000_000_u32),
             -1 => Self((self.0.unbounded_shr(9)) & 0o000_777_777_u32),
             -2 => Self((self.0.unbounded_shr(18)) & 0o000_000_777_u32),
-            _ => Self(0)
+            _ => Self(0),
         }
     }
 
     /// Return none if the z-shift would move part of the polycube past an edge.
-    pub fn bounded_shift_z(self, shift: i8) -> Option<Self> { 
+    pub fn bounded_shift_z(self, shift: i8) -> Option<Self> {
         let shifted = self.shift_z(shift);
         if self.count_cubes() == shifted.count_cubes() {
             Some(shifted)
@@ -221,7 +215,6 @@ impl BitCube3 {
         self.0 & other.0 != 0
     }
 }
-
 
 impl BitOr for BitCube3 {
     type Output = Self;
@@ -258,25 +251,28 @@ impl Shr<u32> for BitCube3 {
 impl fmt::Debug for BitCube3 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "BitCube3({:#011o})\n{:}", self.0, self)
-    } 
-} 
+    }
+}
 
 impl fmt::Display for BitCube3 {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}",
+        write!(
+            f,
+            "{}",
             (0..3)
-            .map(|x| { let x = self.0 >> (3 * (2-x));
-                (0..3)
-                .map(|y| format!("{:03b}", (x >> (9*y)) & 0x7))
-                .map(|s| s.chars().rev().collect())
+                .map(|x| {
+                    let x = self.0 >> (3 * (2 - x));
+                    (0..3)
+                        .map(|y| format!("{:03b}", (x >> (9 * y)) & 0x7))
+                        .map(|s| s.chars().rev().collect())
+                        .collect::<Vec<String>>()
+                        .join(" ")
+                })
                 .collect::<Vec<String>>()
-                .join(" ")
-            })
-            .collect::<Vec<String>>()
-            .join("\n")
-            )
-    } 
-} 
+                .join("\n")
+        )
+    }
+}
 
 #[cfg(test)]
 mod test {
@@ -284,120 +280,231 @@ mod test {
 
     #[test]
     fn test_debug() {
-        assert_eq!(format!("{:?}", BitCube3::from(BC3_ORDER)),
-          "BitCube3(0o076543210)\n010 101 000\n100 001 111\n000 110 011"
+        assert_eq!(
+            format!("{:?}", BitCube3::from(BC3_ORDER)),
+            "BitCube3(0o076543210)\n010 101 000\n100 001 111\n000 110 011"
         );
     }
 
     #[test]
     fn test_display() {
-        assert_eq!(format!("{:}", BitCube3::from(BC3_ORDER)),
+        assert_eq!(
+            format!("{:}", BitCube3::from(BC3_ORDER)),
             "010 101 000\n100 001 111\n000 110 011"
         );
     }
 
     #[test]
     fn test_bitor() {
-        assert_eq!(BitCube3::from(BC3_FULL) | BitCube3::from(BC3_FULL), BitCube3::from(BC3_FULL));
-        assert_eq!(BitCube3::from(BC3_CENTER_X) | BitCube3::from(BC3_CENTER_Y) | BitCube3::from(BC3_CENTER_Z), BitCube3::from(BC3_CENTER_ALL));
+        assert_eq!(
+            BitCube3::from(BC3_FULL) | BitCube3::from(BC3_FULL),
+            BitCube3::from(BC3_FULL)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_X)
+                | BitCube3::from(BC3_CENTER_Y)
+                | BitCube3::from(BC3_CENTER_Z),
+            BitCube3::from(BC3_CENTER_ALL)
+        );
     }
 
     #[test]
     fn test_bitand() {
-        assert_eq!(BitCube3::from(BC3_FULL) & BitCube3::from(BC3_FULL), BitCube3::from(BC3_FULL));
-        assert_eq!(BitCube3::from(BC3_CENTER_X) & BitCube3::from(BC3_CENTER_Y) & BitCube3::from(BC3_CENTER_Z), BitCube3(0o020_000_u32));
+        assert_eq!(
+            BitCube3::from(BC3_FULL) & BitCube3::from(BC3_FULL),
+            BitCube3::from(BC3_FULL)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_X)
+                & BitCube3::from(BC3_CENTER_Y)
+                & BitCube3::from(BC3_CENTER_Z),
+            BitCube3(0o020_000_u32)
+        );
     }
 
     #[test]
     fn test_shift_x() {
-        assert_eq!(BitCube3::from(BC3_FULL).shift_x(1), BitCube3(0o666_666_666_u32));
-        assert_eq!(BitCube3::from(BC3_FULL).shift_x(2), BitCube3(0o444_444_444_u32));
+        assert_eq!(
+            BitCube3::from(BC3_FULL).shift_x(1),
+            BitCube3(0o666_666_666_u32)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_FULL).shift_x(2),
+            BitCube3(0o444_444_444_u32)
+        );
     }
 
     #[test]
     fn test_bounded_shift_x() {
         assert_eq!(BitCube3::from(BC3_FULL).bounded_shift_x(1), None);
         assert_eq!(BitCube3::from(BC3_CENTER_X).bounded_shift_x(1), None);
-        assert_eq!(BitCube3::from(BC3_CENTER_Y).bounded_shift_x(1), Some(BitCube3(0o444000)));
-        assert_eq!(BitCube3::from(BC3_CENTER_Z).bounded_shift_x(1), Some(BitCube3(0o040040040)));
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_Y).bounded_shift_x(1),
+            Some(BitCube3(0o444000))
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_Z).bounded_shift_x(1),
+            Some(BitCube3(0o040040040))
+        );
         assert_eq!(BitCube3::from(BC3_CENTER_Y) << 1, BitCube3(0o444000));
         assert_eq!(BitCube3::from(BC3_CENTER_Z) << 1, BitCube3(0o040040040));
     }
 
     #[test]
     fn test_shift_y() {
-        assert_eq!(BitCube3::from(BC3_FULL).shift_y(1), BitCube3(0o770_770_770_u32));
-        assert_eq!(BitCube3::from(BC3_FULL).shift_y(-2), BitCube3(0o007_007_007_u32));
+        assert_eq!(
+            BitCube3::from(BC3_FULL).shift_y(1),
+            BitCube3(0o770_770_770_u32)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_FULL).shift_y(-2),
+            BitCube3(0o007_007_007_u32)
+        );
         assert_eq!(BitCube3::from(BC3_CENTER_Z) >> 3, BitCube3(0o002002002));
     }
 
     #[test]
     fn test_bounded_shift_y() {
         assert_eq!(BitCube3::from(BC3_FULL).bounded_shift_y(1), None);
-        assert_eq!(BitCube3::from(BC3_CENTER_X).bounded_shift_y(1), Some(BitCube3(0o700000)));
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_X).bounded_shift_y(1),
+            Some(BitCube3(0o700000))
+        );
         assert_eq!(BitCube3::from(BC3_CENTER_Y).bounded_shift_y(1), None);
-        assert_eq!(BitCube3::from(BC3_CENTER_Z).bounded_shift_y(1), Some(BitCube3(0o200200200)));
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_Z).bounded_shift_y(1),
+            Some(BitCube3(0o200200200))
+        );
     }
 
     #[test]
     fn test_shift_z() {
-        assert_eq!(BitCube3::from(BC3_FULL).shift_z(1), BitCube3(0o777_777_000_u32));
-        assert_eq!(BitCube3::from(BC3_FULL).shift_z(-2), BitCube3(0o000_000_777_u32));
+        assert_eq!(
+            BitCube3::from(BC3_FULL).shift_z(1),
+            BitCube3(0o777_777_000_u32)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_FULL).shift_z(-2),
+            BitCube3(0o000_000_777_u32)
+        );
     }
 
     #[test]
     fn test_bounded_shift_z() {
         assert_eq!(BitCube3::from(BC3_FULL).bounded_shift_z(1), None);
-        assert_eq!(BitCube3::from(BC3_CENTER_X).bounded_shift_z(1), Some(BitCube3(0o070000000)));
-        assert_eq!(BitCube3::from(BC3_CENTER_Y).bounded_shift_z(1), Some(BitCube3(0o222000000)));
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_X).bounded_shift_z(1),
+            Some(BitCube3(0o070000000))
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_Y).bounded_shift_z(1),
+            Some(BitCube3(0o222000000))
+        );
         assert_eq!(BitCube3::from(BC3_CENTER_Z).bounded_shift_z(1), None);
     }
 
     // #[test]
     // fn test_shift_to_origin() {
-        // assert_eq!(BitCube3::from(BC3_FULL).shift_to_origin(), BitCube3::from(BC3_FULL));
-        // assert_eq!((BitCube3::from(BC3_CENTER_X) | BitCube3::from(BC3_CENTER_Y)).shift_to_origin(), BitCube4(0x0000_0000_6ff6_6ff6));
+    // assert_eq!(BitCube3::from(BC3_FULL).shift_to_origin(), BitCube3::from(BC3_FULL));
+    // assert_eq!((BitCube3::from(BC3_CENTER_X) | BitCube3::from(BC3_CENTER_Y)).shift_to_origin(), BitCube4(0x0000_0000_6ff6_6ff6));
     // }
 
     #[test]
     fn test_rotate_x() {
-        assert_eq!(BitCube3::from(BC3_FULL).rotate_x(), BitCube3::from(BC3_FULL));
-        assert_eq!(BitCube3::from(BC3_CENTER).rotate_x(), BitCube3::from(BC3_CENTER));
-        assert_eq!(BitCube3::from(BC3_CENTER_X).rotate_x(), BitCube3::from(BC3_CENTER_X));
-        assert_eq!(BitCube3::from(BC3_CENTER_Y).rotate_x(), BitCube3::from(BC3_CENTER_Z));
-        assert_eq!(BitCube3::from(BC3_CENTER_Z).rotate_x(), BitCube3::from(BC3_CENTER_Y));
+        assert_eq!(
+            BitCube3::from(BC3_FULL).rotate_x(),
+            BitCube3::from(BC3_FULL)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER).rotate_x(),
+            BitCube3::from(BC3_CENTER)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_X).rotate_x(),
+            BitCube3::from(BC3_CENTER_X)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_Y).rotate_x(),
+            BitCube3::from(BC3_CENTER_Z)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_Z).rotate_x(),
+            BitCube3::from(BC3_CENTER_Y)
+        );
         assert_eq!(BitCube3(0o7).rotate_x(), BitCube3(0o700));
         assert_eq!(BitCube3(0o4017).rotate_x(), BitCube3(0o100740));
     }
 
     #[test]
     fn test_rotate_y() {
-        assert_eq!(BitCube3::from(BC3_FULL).rotate_y(), BitCube3::from(BC3_FULL));
-        assert_eq!(BitCube3::from(BC3_CENTER).rotate_y(), BitCube3::from(BC3_CENTER));
-        assert_eq!(BitCube3::from(BC3_CENTER_X).rotate_y(), BitCube3::from(BC3_CENTER_Z));
-        assert_eq!(BitCube3::from(BC3_CENTER_Y).rotate_y(), BitCube3::from(BC3_CENTER_Y));
-        assert_eq!(BitCube3::from(BC3_CENTER_Z).rotate_y(), BitCube3::from(BC3_CENTER_X));
+        assert_eq!(
+            BitCube3::from(BC3_FULL).rotate_y(),
+            BitCube3::from(BC3_FULL)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER).rotate_y(),
+            BitCube3::from(BC3_CENTER)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_X).rotate_y(),
+            BitCube3::from(BC3_CENTER_Z)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_Y).rotate_y(),
+            BitCube3::from(BC3_CENTER_Y)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_Z).rotate_y(),
+            BitCube3::from(BC3_CENTER_X)
+        );
         assert_eq!(BitCube3(0o7).rotate_y(), BitCube3(0o4004004));
         assert_eq!(BitCube3(0o4017).rotate_y(), BitCube3(0o6004044));
     }
 
     #[test]
     fn test_rotate_z() {
-        assert_eq!(BitCube3::from(BC3_FULL).rotate_z(), BitCube3::from(BC3_FULL));
-        assert_eq!(BitCube3::from(BC3_CENTER).rotate_z(), BitCube3::from(BC3_CENTER));
-        assert_eq!(BitCube3::from(BC3_CENTER_X).rotate_z(), BitCube3::from(BC3_CENTER_Y));
-        assert_eq!(BitCube3::from(BC3_CENTER_Y).rotate_z(), BitCube3::from(BC3_CENTER_X));
-        assert_eq!(BitCube3::from(BC3_CENTER_Z).rotate_z(), BitCube3::from(BC3_CENTER_Z));
+        assert_eq!(
+            BitCube3::from(BC3_FULL).rotate_z(),
+            BitCube3::from(BC3_FULL)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER).rotate_z(),
+            BitCube3::from(BC3_CENTER)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_X).rotate_z(),
+            BitCube3::from(BC3_CENTER_Y)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_Y).rotate_z(),
+            BitCube3::from(BC3_CENTER_X)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_Z).rotate_z(),
+            BitCube3::from(BC3_CENTER_Z)
+        );
         assert_eq!(BitCube3(0o7).rotate_z(), BitCube3(0o444));
         assert_eq!(BitCube3(0o4017).rotate_z(), BitCube3(0o400446));
     }
 
     #[test]
     fn test_rotate_d() {
-        assert_eq!(BitCube3::from(BC3_FULL).rotate_d(), BitCube3::from(BC3_FULL));
-        assert_eq!(BitCube3::from(BC3_CENTER_X).rotate_d(), BitCube3::from(BC3_CENTER_Y));
-        assert_eq!(BitCube3::from(BC3_CENTER_Y).rotate_d(), BitCube3::from(BC3_CENTER_Z));
-        assert_eq!(BitCube3::from(BC3_CENTER_Z).rotate_d(), BitCube3::from(BC3_CENTER_X));
+        assert_eq!(
+            BitCube3::from(BC3_FULL).rotate_d(),
+            BitCube3::from(BC3_FULL)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_X).rotate_d(),
+            BitCube3::from(BC3_CENTER_Y)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_Y).rotate_d(),
+            BitCube3::from(BC3_CENTER_Z)
+        );
+        assert_eq!(
+            BitCube3::from(BC3_CENTER_Z).rotate_d(),
+            BitCube3::from(BC3_CENTER_X)
+        );
         assert_eq!(BitCube3(0o1047).rotate_d(), BitCube3(0o100113));
     }
 
@@ -408,17 +515,23 @@ mod test {
 
     #[test]
     fn test_from_bitperm4() {
-        assert_eq!(BitCube3::from(BitCube4(0x77707770777)), BitCube3(0o777777777));
-        assert_eq!(BitCube3::from(BitCube4(0x70000000000)), BitCube3(0o700000000));
+        assert_eq!(
+            BitCube3::from(BitCube4(0x77707770777)),
+            BitCube3(0o777777777)
+        );
+        assert_eq!(
+            BitCube3::from(BitCube4(0x70000000000)),
+            BitCube3(0o700000000)
+        );
         assert_eq!(BitCube3::from(BitCube4(0x7605430210)), BitCube3(0o76543210));
     }
 
     // TODO: TryFrom at a future point?
     // #[test]
     // fn test_tryfrom_bitcube4() {
-        // assert_eq!(BitCube3::try_from(BitCube4(0x77707770777)).ok(), Some(BitCube3(0o777777777)));
-        // assert_eq!(BitCube3::try_from(BitCube4(0x77707770777077f)).ok(), Some(BitCube3(0o777777777)));
-        // assert_eq!(BitCube3::from(BitCube4(0x70000000000)), BitCube3(0o700000000));
-        // assert_eq!(BitCube3::from(BitCube4(0x7605430210)), BitCube3(0o76543210));
+    // assert_eq!(BitCube3::try_from(BitCube4(0x77707770777)).ok(), Some(BitCube3(0o777777777)));
+    // assert_eq!(BitCube3::try_from(BitCube4(0x77707770777077f)).ok(), Some(BitCube3(0o777777777)));
+    // assert_eq!(BitCube3::from(BitCube4(0x70000000000)), BitCube3(0o700000000));
+    // assert_eq!(BitCube3::from(BitCube4(0x7605430210)), BitCube3(0o76543210));
     // }
 }
