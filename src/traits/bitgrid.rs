@@ -17,6 +17,14 @@ use core::ops::{
 ///
 /// Supertraits match [`crate::bitgrid_8x8::BitGrid8x8`]'s derives so generic code can
 /// rely on the same comparisons, hashing, ordering, and bitwise grid algebra.
+///
+/// **Half-turn** ([`BitGrid::rotate_c2`]) is about the **center of the full grid** for
+/// [`crate::bitgrid_8x8::BitGrid8x8`] and [`crate::bitgrid_4x16::BitGrid4x16`].
+///
+/// **Quarter-turns** ([`BitGrid::try_rotate_c4`]) depend on the type: on a square grid they are
+/// in-place about the center; on [`crate::bitgrid_4x16::BitGrid4x16`] they rotate the horizontally
+/// centered 4×4 and return [`None`] if any bit lies outside that block. Two successful quarter turns
+/// match [`BitGrid::rotate_c2`] on that type. Square grids always return [`Some`] for quarter-turns.
 pub trait BitGrid:
     Copy
     + Clone
@@ -37,12 +45,20 @@ pub trait BitGrid:
     type BitsIter: Iterator<Item = Self>;
 
     /// Yields `(x, y)` coordinates of each **set** cell, with origin at the
-    /// lower-left (same indexing as `BitGrid8x8`: bit index `x + 8 * y`).
+    /// lower-left (`BitGrid8x8`: index `x + 8 * y`; `BitGrid4x16`: index `x + 16 * y`).
     type CoordsIter: Iterator<Item = (usize, usize)>;
 
     fn mirror_x(&self) -> Self;
     fn mirror_y(&self) -> Self;
-    fn rotate_c4(&self, steps: isize) -> Self;
+
+    /// Half-turn (180°) about the grid center; always defined for rectangular grids.
+    fn rotate_c2(&self) -> Self;
+
+    /// Net quarter-turns: `steps` modulo 4, CCW positive. Semantics are type-specific (see trait
+    /// docs). [`None`] when the operation is not defined for the current pattern (e.g. bits outside
+    /// the rotatable region on [`crate::bitgrid_4x16::BitGrid4x16`]).
+    fn try_rotate_c4(&self, steps: isize) -> Option<Self>;
+
     fn shift_x(&self, shift: isize) -> Self;
     fn shift_y(&self, shift: isize) -> Self;
 
