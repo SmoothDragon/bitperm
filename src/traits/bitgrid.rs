@@ -48,6 +48,9 @@ pub trait BitGrid:
     /// lower-left (`BitGrid8x8`: index `x + 8 * y`; `BitGrid4x16`: index `x + 16 * y`).
     type CoordsIter: Iterator<Item = (usize, usize)>;
 
+    /// Grid with exactly one **set** bit at `(x, y)` (`iterate_coords()` convention).
+    fn bit_at(x: usize, y: usize) -> Self;
+
     fn mirror_x(&self) -> Self;
     fn mirror_y(&self) -> Self;
 

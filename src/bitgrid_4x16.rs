@@ -189,6 +189,10 @@ impl BitGrid for BitGrid4x16 {
     type BitsIter = BitGrid4x16PointsIter;
     type CoordsIter = BitGrid4x16PointCoordsIter;
 
+    fn bit_at(x: usize, y: usize) -> Self {
+        Self(1_u64 << (x + BITGRID_4X16_WIDTH * y))
+    }
+
     /// Flip across the horizontal midline: `y -> 3 - y`.
     fn mirror_x(&self) -> Self {
         let mut out = 0_u64;
@@ -385,8 +389,9 @@ mod tests {
     use super::*;
     use crate::traits::BitGrid;
 
+    #[inline]
     fn bit_at(x: usize, y: usize) -> BitGrid4x16 {
-        BitGrid4x16(1_u64 << (x + BITGRID_4X16_WIDTH * y))
+        <BitGrid4x16 as BitGrid>::bit_at(x, y)
     }
 
     #[test]

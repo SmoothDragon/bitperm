@@ -204,6 +204,10 @@ impl BitGrid for BitGrid8x8 {
     type BitsIter = BitGrid8x8PointsIter;
     type CoordsIter = BitGrid8x8PointCoordsIter;
 
+    fn bit_at(x: usize, y: usize) -> Self {
+        Self(1_u64 << (x + 8 * y))
+    }
+
     fn mirror_x(&self) -> Self {
         self.flip_x()
     }
