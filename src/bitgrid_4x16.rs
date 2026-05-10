@@ -189,6 +189,9 @@ impl BitGrid for BitGrid4x16 {
     type BitsIter = BitGrid4x16PointsIter;
     type CoordsIter = BitGrid4x16PointCoordsIter;
 
+    const WIDTH: usize = BITGRID_4X16_WIDTH;
+    const HEIGHT: usize = BITGRID_4X16_HEIGHT;
+
     fn bit_at(x: usize, y: usize) -> Self {
         Self(1_u64 << (x + BITGRID_4X16_WIDTH * y))
     }
@@ -277,43 +280,6 @@ impl BitGrid for BitGrid4x16 {
         } else {
             Self(mask & self.0.unbounded_shr(shift_bits))
         }
-    }
-
-    fn cycle_x(&self, shift: isize) -> Self {
-        let shift = shift.rem_euclid(BITGRID_4X16_WIDTH as isize) as u32;
-        if shift == 0 {
-            return *self;
-        }
-        let mut out = 0_u64;
-        for y in 0..BITGRID_4X16_HEIGHT {
-            let row = ((self.0 >> (BITGRID_4X16_WIDTH * y)) & 0xffff) as u16;
-            let rotated = row.rotate_left(shift);
-            out |= (rotated as u64) << (BITGRID_4X16_WIDTH * y);
-        }
-        Self(out)
-    }
-
-    fn cycle_y(&self, shift: isize) -> Self {
-        let shift = shift.rem_euclid(BITGRID_4X16_HEIGHT as isize) as u32;
-        if shift == 0 {
-            return *self;
-        }
-        let mut out = 0_u64;
-        for x in 0..BITGRID_4X16_WIDTH {
-            let mut col = 0_u8;
-            for y in 0..BITGRID_4X16_HEIGHT {
-                if (self.0 >> (x + BITGRID_4X16_WIDTH * y)) & 1 != 0 {
-                    col |= 1 << y;
-                }
-            }
-            let rotated = ((col << shift) | (col >> (BITGRID_4X16_HEIGHT as u32 - shift))) & 0xf;
-            for y in 0..BITGRID_4X16_HEIGHT {
-                if (rotated >> y) & 1 != 0 {
-                    out |= 1_u64 << (x + BITGRID_4X16_WIDTH * y);
-                }
-            }
-        }
-        Self(out)
     }
 
     fn iterate_bits(&self) -> Self::BitsIter {

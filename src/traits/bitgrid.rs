@@ -48,6 +48,11 @@ pub trait BitGrid:
     /// lower-left (`BitGrid8x8`: index `x + 8 * y`; `BitGrid4x16`: index `x + 16 * y`).
     type CoordsIter: Iterator<Item = (usize, usize)>;
 
+    /// Row width in cells (`x` stride in the linear index `x + Self::WIDTH * y`).
+    const WIDTH: usize;
+    /// Column height in cells (`y` stride uses `Self::WIDTH`).
+    const HEIGHT: usize;
+
     /// Grid with exactly one **set** bit at `(x, y)` (`iterate_coords()` convention).
     fn bit_at(x: usize, y: usize) -> Self;
 
@@ -66,10 +71,24 @@ pub trait BitGrid:
     fn shift_y(&self, shift: isize) -> Self;
 
     /// Cyclic (torus) shift along **x**: each row rotates independently.
-    fn cycle_x(&self, shift: isize) -> Self;
+    ///
+    /// Default combines two clipped shifts: with `k = shift.rem_euclid(Self::WIDTH as isize)`,
+    /// `shift_x(k) ^ shift_x(k - WIDTH)` (disjoint pieces of a row `rotate_left`), which matches
+    /// `shift_x`’s edge clipping rules.
+    fn cycle_x(&self, shift: isize) -> Self {
+        let w = Self::WIDTH as isize;
+        let k = shift.rem_euclid(w);
+        self.shift_x(k) ^ self.shift_x(k - w)
+    }
 
     /// Cyclic (torus) shift along **y**: each column rotates independently.
-    fn cycle_y(&self, shift: isize) -> Self;
+    ///
+    /// Default: `shift_y(k) ^ shift_y(k - HEIGHT)` with `k = shift.rem_euclid(Self::HEIGHT as isize)`.
+    fn cycle_y(&self, shift: isize) -> Self {
+        let h = Self::HEIGHT as isize;
+        let k = shift.rem_euclid(h);
+        self.shift_y(k) ^ self.shift_y(k - h)
+    }
 
     fn iterate_bits(&self) -> Self::BitsIter;
     fn iterate_coords(&self) -> Self::CoordsIter;

@@ -204,6 +204,9 @@ impl BitGrid for BitGrid8x8 {
     type BitsIter = BitGrid8x8PointsIter;
     type CoordsIter = BitGrid8x8PointCoordsIter;
 
+    const WIDTH: usize = 8;
+    const HEIGHT: usize = 8;
+
     fn bit_at(x: usize, y: usize) -> Self {
         Self(1_u64 << (x + 8 * y))
     }
@@ -243,43 +246,6 @@ impl BitGrid for BitGrid8x8 {
 
     fn shift_y(&self, shift: isize) -> Self {
         BitGrid8x8::shift_y(*self, shift)
-    }
-
-    fn cycle_x(&self, shift: isize) -> Self {
-        let shift = shift.rem_euclid(8) as u32;
-        if shift == 0 {
-            return *self;
-        }
-        let mut out = 0_u64;
-        for y in 0..8 {
-            let row = ((self.0 >> (8 * y)) & 0xff) as u8;
-            let rotated = row.rotate_left(shift);
-            out |= (rotated as u64) << (8 * y);
-        }
-        Self(out)
-    }
-
-    fn cycle_y(&self, shift: isize) -> Self {
-        let shift = shift.rem_euclid(8) as u32;
-        if shift == 0 {
-            return *self;
-        }
-        let mut out = 0_u64;
-        for x in 0..8 {
-            let mut col = 0_u8;
-            for y in 0..8 {
-                if (self.0 >> (x + 8 * y)) & 1 != 0 {
-                    col |= 1 << y;
-                }
-            }
-            let rotated = col.rotate_left(shift);
-            for y in 0..8 {
-                if (rotated >> y) & 1 != 0 {
-                    out |= 1_u64 << (x + 8 * y);
-                }
-            }
-        }
-        Self(out)
     }
 
     fn iterate_bits(&self) -> Self::BitsIter {
