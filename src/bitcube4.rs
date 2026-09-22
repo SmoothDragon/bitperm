@@ -6,8 +6,6 @@ use std::iter::FromIterator;
 use arrayvec::*;
 use derive_more::*;
 
-use flowscad::*;
-
 use crate::bitlib::*;
 
 // use itertools::Itertools;
@@ -111,19 +109,9 @@ impl From<BitCube4> for u64 {
     }
 }
 
-impl From<BitCube4> for D3 {
-    fn from(val: BitCube4) -> Self {
-        let block = D3::cube(1.0);
-        (0..64)
-            .filter(|ii| (val.0 >> ii) & 1 == 1)
-            .map(|ii| v3(ii & 0x3, (ii >> 2) & 0x3, ii >> 4))
-            .map(|xyz| block.clone().translate(xyz))
-            .union()
-            .translate(v3(-2, -2, -2))
-            .scale(10)
-            .color(ColorEnum::Red)
-    }
-}
+// NOTE: `impl From<BitCube4> for D3` is provided by the `flowscad` crate itself
+// (see `flowscad::scad3d`), which avoids a circular dependency and keeps
+// `bitperm` a `no_std`-friendly geometry-agnostic library.
 
 impl BitCube4 {
     /// Count the number of cubes (ones) in the BitCube

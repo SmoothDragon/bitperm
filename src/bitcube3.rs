@@ -1,8 +1,6 @@
 use std::fmt;
 use std::ops::*;
 
-use flowscad::*;
-
 use crate::bitlib::*;
 // use crate::bitlib::BC3_FULL;
 // use crate::bitlib::swap_mask_shift_u32;
@@ -60,19 +58,9 @@ impl TryFrom<u64> for BitCube3 {
 }
 */
 
-impl From<BitCube3> for D3 {
-    fn from(val: BitCube3) -> Self {
-        let block = D3::cube(1.0);
-        (0..27)
-            .filter(|ii| (val.0 >> ii) & 1 == 1)
-            .map(|ii| v3(ii % 3, (ii / 3) % 3, ii / 9))
-            .map(|xyz| block.clone().translate(xyz))
-            .union()
-            // .translate(v3(-1,-1,-1))
-            .scale(10)
-            .color(ColorEnum::Red)
-    }
-}
+// NOTE: `impl From<BitCube3> for D3` is provided by the `flowscad` crate itself
+// (see `flowscad::scad3d`), which avoids a circular dependency and keeps
+// `bitperm` a `no_std`-friendly geometry-agnostic library.
 
 /// 3x3x3 layout of u32 0b00000qponmlkjihgfedcba9876543210
 /// 678 | fgh | opq
